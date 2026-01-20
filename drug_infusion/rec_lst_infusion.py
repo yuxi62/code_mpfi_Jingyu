@@ -81,7 +81,7 @@ rec_lst_infusion = [
 {'anm': 'AC310', 'date': '20250827', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 3,], 'latency': 20,},  
 {'anm': 'AC310', 'date': '20250828', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 20,},  
 {'anm': 'AC310', 'date': '20250829', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,}, 
-{'anm': 'AC310', 'date': '20250830', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 20,},  # bad imaging quality
+# {'anm': 'AC310', 'date': '20250830', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 20,},  # bad imaging quality
 ]
 
 muscimol_imaging = [

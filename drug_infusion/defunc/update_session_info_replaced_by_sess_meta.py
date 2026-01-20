@@ -3,12 +3,16 @@
 Created on Sun Nov  2 17:26:51 2025
 
 @author: Jingyu Cao
+
+perpose: update session_info dataframe with behavior trial info
 """
-# import sys
+import sys
 import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+if (r"Z:\Jingyu\code_mpfi_Jingyu\drug_infusion"in sys.path) == False:
+    sys.path.append(r"Z:\Jingyu\code_mpfi_Jingyu\drug_infusion")
 from rec_lst_infusion import rec_lst_infusion
 #%% func
 def update_session_info(df_session_info, rec, exp=r'GCaMP8s_infusion'):
