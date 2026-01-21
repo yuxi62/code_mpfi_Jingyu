@@ -16,10 +16,19 @@ import utils_Jingyu as utl
 # import plotting_functions_Jingyu as pf
 from utils_Jingyu import align_trials, seperate_bad_trial, seperate_eraly_late_lick_trial
 from scipy.stats import wilcoxon, ranksums, ttest_rel, ttest_ind, sem
-from common import mpl_formatting
-mpl_formatting()
+# from common import mpl_formatting
 
-
+def mpl_formatting(): # from Dinghao, for plotting editable pdf with matplot
+    import matplotlib
+    matplotlib.rcParams.update({
+        'font.family': 'Arial',
+        'pdf.fonttype': 42,
+        'ps.fonttype': 42,
+        'axes.labelsize': 10,
+        'xtick.labelsize': 9,
+        'ytick.labelsize': 9
+        })
+mpl_formatting() 
 # def plot_two_traces_with_binned_stats(profile_a, profile_b, ax=None,
 #                                       test='ranksum',
 #                                       time_windows=[(-0.5, 0.5), (0.5, 1.5), (1.5, 2.5), (2.5, 3.5)],

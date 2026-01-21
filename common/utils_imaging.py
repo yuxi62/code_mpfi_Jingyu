@@ -145,3 +145,67 @@ def percentile_dff(F_array, window_size=1800, q=10, t_axis=-1, return_baseline=0
     dff = (array - baseline) / (baseline + epsilon)
 
     return (dff.get(), baseline.get()) if return_baseline else dff.get()
+
+def align_trials(data, alignment, beh, bef, aft, gpu=0, fs=30):
+    if gpu:
+       data = cp.array(data) 
+    if data.ndim == 1:
+        data = data[np.newaxis, :] 
+    
+    win_frames = int((bef+aft)*fs)
+    tot_roi = data.shape[0]
+        
+    if alignment ==  'run':
+        run_onsets = beh['run_onset_frames']
+        tot_trial = len(run_onsets)
+        if gpu:
+            aligned_signal = cp.zeros((tot_roi, tot_trial, win_frames))
+            for t in range(tot_trial):
+                curr_trace = data[:, run_onsets[t]-int(bef*fs):run_onsets[t]+int(aft*fs)]
+                if curr_trace.shape[1]<win_frames or run_onsets[t]==0:
+                    aligned_signal[:,t,:]=cp.nan
+                else:
+                    aligned_signal[:,t,:]=curr_trace
+        else:
+            aligned_signal = np.zeros((tot_roi, tot_trial, win_frames))
+            for t in range(tot_trial):
+                curr_trace = data[:, run_onsets[t]-int(bef*fs):run_onsets[t]+int(aft*fs)]
+                if curr_trace.shape[1]<win_frames or run_onsets[t]==0:
+                    aligned_signal[:,t,:]=np.nan
+                else:
+                    aligned_signal[:,t,:]=curr_trace
+    
+    if alignment == 'rew':
+        # # temp: 20250417 
+        rewards = beh['reward_frames']
+        # rewards = beh.blackout_frames # for none rewarded trials, use black out on time as alignment
+        tot_trial = len(rewards)
+        if gpu:
+            aligned_signal = cp.zeros((tot_roi, tot_trial, win_frames))
+            for t in range(tot_trial):
+                curr_trace = data[:, rewards[t]-int(bef*fs):rewards[t]+int(aft*fs)]
+                if curr_trace.shape[1]<win_frames or rewards[t]==0:
+                    aligned_signal[:,t,:]=cp.nan
+                else:
+                    aligned_signal[:,t,:]=curr_trace
+        else:
+            aligned_signal = np.zeros((tot_roi, tot_trial, win_frames))
+            for t in range(tot_trial):
+                curr_trace = data[:, rewards[t]-int(bef*fs):rewards[t]+int(aft*fs)]
+                if curr_trace.shape[1]<win_frames or rewards[t]==0:
+                    aligned_signal[:,t,:]=np.nan
+                else:
+                    aligned_signal[:,t,:]=curr_trace
+                
+    if alignment == 'cue':
+        cues = beh.start_cue_frames # for none rewarded trials, use black out on time as alignment
+        tot_trial = len(cues)
+        aligned_signal = np.zeros((tot_roi, tot_trial, win_frames))
+        for t in range(tot_trial):
+            curr_trace = data[:, cues[t]-int(bef*fs):cues[t]+int(aft*fs)]
+            if curr_trace.shape[1]<win_frames or cues[t]==0:
+                aligned_signal[:,t,:]=np.nan
+            else:
+                aligned_signal[:,t,:]=curr_trace
+    
+    return aligned_signal.squeeze()

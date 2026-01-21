@@ -5,6 +5,7 @@ Created on Tue Jan 20 11:42:29 2026
 @author: Jingyu Cao
 """
 import numpy as np
+import pandas as pd
 
 exp = r'GCaMP8s_infusion'
 
@@ -88,3 +89,15 @@ muscimol_imaging = [
 {'anm': 'AC986', 'date': '20250614', 'session': ['02', '04', '06'], 'label': ['baseline', 'muscimol', 'muscimol2'], 'conc': [np.nan, 0.25, 0.25]},    
 {'anm': 'AC985', 'date': '20250614', 'session': ['02', '04', '06'], 'label': ['baseline', 'muscimol', 'muscimol2'], 'conc': [np.nan, 0.25, 0.25]},        
     ]
+
+#%% processed sessions metadata
+SESSION_INFO_PATH = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\infusion_session_info.parquet"
+df_session_info = pd.read_parquet(SESSION_INFO_PATH)
+
+# Filter for high-quality sessions
+selected_rec_lst = df_session_info[
+                    (df_session_info['perc_valid_trials_ss1']>0.6)&
+                    (df_session_info['perc_valid_trials_ss2']>0.6)&
+                    (df_session_info['latency']==20)&
+                    (df_session_info['anm']!='AC996') # different strain: Ai14:D1R
+                    ]

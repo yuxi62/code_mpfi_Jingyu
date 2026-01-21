@@ -6,6 +6,7 @@ Created on Tue Jan 13 16:41:33 2026
 
 Commonly used fucntion for drug infusion analysis
 """
+#%%
 import os
 import sys
 import numpy as np
@@ -13,25 +14,40 @@ import pandas as pd
 import xarray as xr
 from scipy.ndimage import center_of_mass, gaussian_filter1d
 
-sys.path.append(r"Z:\Jingyu\Code\Python\2p_SCH23390_infusion")
-from drd1_detection import drd1_cell_match
-from trial_selection import select_good_trials, extract_speed_trace, extract_first_lick, extract_reward
+if r"Z:\Jingyu\code_mpfi_Jingyu" not in sys.path:
+    sys.path.insert(0, r"Z:\Jingyu\code_mpfi_Jingyu")
+from common.utils_basic import nd_to_list, trace_filter
+from common.utils_imaging import align_trials
+from drug_infusion.drd1_detection import drd1_cell_match
+from drug_infusion.trial_selection import select_good_trials
 
-if ("Z:\Jingyu\Code\Python" in sys.path) == False:
-    sys.path.append("Z:\Jingyu\Code\Python")
-import utils_Jingyu as utl
+OUT_DIR = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\processed_dataframe"
+PATH_GCAMP_PROFILE = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\gcamp_profile"
+BEHAVIOR_DATA_DIR = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\behaviour_profile"
+#%%
+def load_profile(rec):
+    anm_id = rec['anm']
+    date = rec['date']
+    df_gcamp_profile = pd.read_parquet(
+        PATH_GCAMP_PROFILE+ f"\{anm_id}_{date}_df_gcamp_profile_10perc_dff.parquet")
+    return df_gcamp_profile
 
-def nd_to_list(arr):
-    """
-    Convert a numpy / cupy / xarray array to nested Python lists of float32.
+def load_behaviour(rec, s):
+    if s == 'ss1':
+        ss='02'
+    elif s == 'ss2':
+        ss='04'
+    p_beh = BEHAVIOR_DATA_DIR+r'\{}.pkl'.format(rec['anm']+'-'+rec['date']+'-'+ ss)
+    beh=pd.read_pickle(p_beh)
+    return beh
 
-    - If `arr` is None (or you deliberately pass something falsey), return [].
-    - Otherwise, cast to float32 to keep Parquet footprint small and call .tolist().
-    """
-    if arr is None:
-        return []          # no data → empty list
-    return arr.astype("float32").tolist()
-
+def _filter(df_cal_profile_all, trace_type, s):
+    df_cal_profile_all[f"full_dff_trace_{trace_type}_{s}"] = \
+    df_cal_profile_all[f"full_dff_trace_{trace_type}_{s}"].apply(lambda x:
+                                                                 trace_filter(x, 99)
+                                                                )
+    return df_cal_profile_all
+    
 def calculate_ratio(df_cal_profile_all, s, session_info, trace_type, beh,
                     selected_trials=None,
                     trial_bef=2, trial_aft=4, pre_window=(-1, 0), post_window=(0, 1.5)):
@@ -48,9 +64,11 @@ def calculate_ratio(df_cal_profile_all, s, session_info, trace_type, beh,
     # bad_trials = session_info[f'bad_trials_{s}']
     valid_trials = session_info[f'valid_trials_{s}']
     
+    df_cal_profile_all = _filter(df_cal_profile_all, trace_type, s)
+    
     df_cal_profile_all[f"run_cal_profile_all_{trace_type}_{s}"]=''
     df_cal_profile_all[f"run_cal_profile_all_{trace_type}_{s}"] = df_cal_profile_all[f"full_dff_trace_{trace_type}_{s}"].apply(lambda x: 
-                                                                                                              utl.align_trials(
+                                                                                                                  align_trials(
                                                                                                                   x, 
                                                                                                                   alignment='run', 
                                                                                                                   beh=beh, bef=trial_bef, aft=trial_aft))
@@ -62,18 +80,23 @@ def calculate_ratio(df_cal_profile_all, s, session_info, trace_type, beh,
     # df_cal_profile_all[f'active_trials_{s}'] = df_cal_profile_all[f"run_cal_profile_all_{trace_type}_{s}"].apply(lambda x: detect_active_trial(np.stack(x)))
     df_cal_profile_all[f"run_cal_profile_{trace_type}_good_{s}"] = df_cal_profile_all[f"run_cal_profile_all_{trace_type}_{s}"].apply(lambda x: np.nanmean(np.stack(x)[good_trials], axis=0))
     
-    if trace_type == 'raw': # to avoid division of negtive value, normalize each ROI's mean trace first
-        # print('to avoid division of negtive value, normalize each ROI mean trace first')
-        df_cal_profile_all[f"run_ratio_{trace_type}_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_{s}"].apply(lambda x: np.nanmean(gaussian_filter1d(x, 1)[post_start:post_end], axis=-1)/\
-                                                                                                            np.nanmean(gaussian_filter1d(x, 1)[pre_start:pre_end], axis=-1))
-        df_cal_profile_all[f"run_ratio_{trace_type}_good_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_good_{s}"].apply(lambda x: np.nanmean(gaussian_filter1d(x, 1)[post_start:post_end], axis=-1)/\
-                                                                                                            np.nanmean(gaussian_filter1d(x, 1)[pre_start:pre_end], axis=-1))                                                                                               
-    elif trace_type == 'rsd':
-        df_cal_profile_all[f"run_ratio_{trace_type}_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_{s}"].apply(lambda x: np.nanmean(x[post_start:post_end], axis=-1)/\
-                                                                                                            np.nanmean(x[pre_start:pre_end], axis=-1))
-        df_cal_profile_all[f"run_ratio_{trace_type}_good_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_good_{s}"].apply(lambda x: np.nanmean(x[post_start:post_end], axis=-1)/\
-                                                                                                            np.nanmean(x[pre_start:pre_end], axis=-1))                                                                                               
+    # smoothing mean trace for ratio calculation 
+    df_cal_profile_all[f"run_ratio_{trace_type}_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_{s}"].apply(lambda x: np.nanmean(gaussian_filter1d(x, 1)[post_start:post_end], axis=-1)/\
+                                                                                                        np.nanmean(gaussian_filter1d(x, 1)[pre_start:pre_end], axis=-1))
+    df_cal_profile_all[f"run_ratio_{trace_type}_good_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_good_{s}"].apply(lambda x: np.nanmean(gaussian_filter1d(x, 1)[post_start:post_end], axis=-1)/\
+                                                                                                        np.nanmean(gaussian_filter1d(x, 1)[pre_start:pre_end], axis=-1))                                                                                               
+    # if trace_type == 'raw':
+    #     df_cal_profile_all[f"run_ratio_{trace_type}_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_{s}"].apply(lambda x: np.nanmean(gaussian_filter1d(x, 1)[post_start:post_end], axis=-1)/\
+    #                                                                                                         np.nanmean(gaussian_filter1d(x, 1)[pre_start:pre_end], axis=-1))
+    #     df_cal_profile_all[f"run_ratio_{trace_type}_good_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_good_{s}"].apply(lambda x: np.nanmean(gaussian_filter1d(x, 1)[post_start:post_end], axis=-1)/\
+    #                                                                                                         np.nanmean(gaussian_filter1d(x, 1)[pre_start:pre_end], axis=-1))                                                                                               
+    # elif trace_type == 'rsd':
+    #     df_cal_profile_all[f"run_ratio_{trace_type}_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_{s}"].apply(lambda x: np.nanmean(x[post_start:post_end], axis=-1)/\
+    #                                                                                                         np.nanmean(x[pre_start:pre_end], axis=-1))
+    #     df_cal_profile_all[f"run_ratio_{trace_type}_good_{s}"] = df_cal_profile_all[f"run_cal_profile_{trace_type}_good_{s}"].apply(lambda x: np.nanmean(x[post_start:post_end], axis=-1)/\
+    #                                                                                                         np.nanmean(x[pre_start:pre_end], axis=-1))                                                                                               
     return df_cal_profile_all 
+
 
 def extract_session_info(rec, trial_type,
                          df_session_info, ##added
@@ -86,40 +109,24 @@ def extract_session_info(rec, trial_type,
     rec_id = anm_id+'-'+date
     session_label = rec['label']
     session_info = df_session_info.loc[rec_id]
-    # beh_ss1 = pd.read_pickle(r"Z:\Jingyu\Code\Python\2p_SCH23390_infusion\behaviour_profile\{}-02.pkl".format(rec_id))
-    # beh_ss1 = pd.read_pickle(r"Z:\Jingyu\Code\Python\2p_SCH23390_infusion\behaviour_profile\{}-04.pkl".format(rec_id))
-    
+
     INT_PATH = r"Z:\Jingyu\2P_Recording\{}\{}\concat".format(anm_id, anm_id+'-'+date)
     
     print('{}_{}_loading...--------------------------'.format(anm_id, date))
     
-    if trial_type == r'_valid_trials':
-        p_df_to_pool = INT_PATH+r"\{}_{}_df_cal_profile_all_to_pool_valid_trials_pre{}_post{}.parquet".format(anm_id, date, pre_window, post_window)
-        if os.path.exists(p_df_to_pool):
-            extract_info = 0
-            df_to_pool = pd.read_parquet(
-                p_df_to_pool)
-        else:
-            extract_info = 1
-            df_cal_profile_all = pd.read_parquet(
-                INT_PATH+r"\{}_{}_df_cal_profile_all_valid_trials.parquet".format(anm_id, date))
-    
-    if trial_type == r'_good_trials':
-        p_df_to_pool = INT_PATH+r"\{}_{}_df_cal_profile_all_to_pool_good_trials_pre{}_post{}_MIN_MAX_SP=65.parquet".format(anm_id, date, pre_window, post_window)
-        # if os.path.exists(p_df_to_pool):
-        #     extract_info = 0
-        #     df_to_pool = pd.read_parquet(
-        #         p_df_to_pool)
-        # else:
+    p_df_out = OUT_DIR+r"\{}_{}_df_cal_profile_all_to_pool_valid_trials_pre{}_post{}.parquet".format(anm_id, date, pre_window, post_window)
+    if not os.path.exists(p_df_out):
         extract_info = 1
+    else:
+        df_out = pd.read_parquet(p_df_out)
+        
+    if extract_info:
         df_cal_profile_all = pd.read_parquet(
-            INT_PATH+r"\{}_{}_df_cal_profile_all_valid_trials.parquet".format(anm_id, date))
-
+            PATH_GCAMP_PROFILE+r"\{}_{}_df_cal_profile_all_valid_trials.parquet".format(anm_id, date))
+    
     if extract_info:
         # calcultate run_response widnow by a defined window
         for i, s in enumerate(sessions):
-            # good_trials = session_info[f'good_trials_{s}']
-            # bad_trials = session_info[f'bad_trials_{s}']
             p_beh = r"Z:\Jingyu\Code\Python\2p_SCH23390_infusion\behaviour_profile\{}.pkl".format(rec['anm']+
                                                                                                   '-'+rec['date']+
                                                                                                   '-'+rec['session'][i])
@@ -239,14 +246,17 @@ def extract_session_info(rec, trial_type,
             # 'active_ss2'
         ]]], axis=1)
         
-        df_to_pool.to_parquet(p_df_to_pool)
+        df_out.to_parquet(p_df_out)
 
-    return df_to_pool
+    return df_out
 
 def sort_response(df, thresh_up, thresh_down, active_thresh, ratio_type='run_ratio_rsd'):
-    df['active_ss1'] = df["active_trials_ss1"].apply(lambda x: (np.sum(x)/len(x)) >active_thresh)
-    df['active_ss2'] = df["active_trials_ss2"].apply(lambda x: (np.sum(x)/len(x)) >active_thresh)    
+    # df['active_ss1'] = df["active_trials_ss1"].apply(lambda x: (np.sum(x)/len(x)) >active_thresh)
+    # df['active_ss2'] = df["active_trials_ss2"].apply(lambda x: (np.sum(x)/len(x)) >active_thresh)    
      
+    df['active_ss1'] = 1
+    df['active_ss2'] = 1 
+    
     df_cal_pyr = df.loc[(df['active_soma'])
                         # &((df['active_ss1'])|
                         #   (df['active_ss2']))
@@ -293,5 +303,5 @@ def sort_response(df, thresh_up, thresh_down, active_thresh, ratio_type='run_rat
     return df_cal_pyr
 
 #%% 
-# if name == '__main__':
+# if __name__ == '__main__':
     

@@ -54,12 +54,12 @@ if r"Z:\Yingxue\code\PythonMotionCorrectionGECO" not in sys.path:
 # Local imports (from this repo)
 from common.utils_basic import nd_to_list
 from common.utils_imaging import percentile_dff
-
+from drug_infusion.robust_sd_filter import robust_filter_along_axis
+from drug_infusion.rec_lst_infusion import selected_rec_lst
 # External imports
 import Select_GCaMP_ROIs_Jingyu
 import Generate_masks
-import utils_Jingyu as utl
-from robust_sd_filter import robust_filter_along_axis
+
 #%% funcs
 # helper function
 def roi_map_to_stat_list(roi_map):
@@ -238,29 +238,30 @@ def extract_session_traces(rec, concat_path, active_soma_only=True):
     dff_ss1, baseline_ss1 = percentile_dff(
         F_ss1, window_size=DFF_WINDOW_SIZE, q=DFF_PERCENTILE, return_baseline=True
     )
-    dff_ss1 = utl.trace_filter(dff_ss1)
+    # dff_ss1 = trace_filter(dff_ss1)
     dff_rsd_ss1 = robust_filter_along_axis(dff_ss1, factor=2, gpu=1).get()
     
     # test for percentile dFF
-    # fig, ax = plt.subplots(figsize=(10, 2), dpi=200)
-    # ax.plot(F_ss1[10, 1000:2800], lw=1, color='blue', label='F raw', alpha=.5)
-    # ax.plot(baseline_ss1[10, 1000:2800], lw=1, color='orange', label=f'{DFF_PERCENTILE}% baseline', 
-    #         alpha=.5)
-    # ax.set(ylabel='F a.u.')
-    # ax.legend(frameon=False)
-    # tax=ax.twinx()
-    # tax.plot(dff_ss1[10, 1000:2800], lw=1, color='green', label='dF/F', alpha=.5)
-    # tax.set(ylabel='dF/F')
-    # tax.plot(dff_rsd_ss1[10, 1000:2800],lw=1, color='tab:red', label='rsd dF/F', alpha=.5)
-    # tax.legend(frameon=False)
-    # plt.show()
+    fig, ax = plt.subplots(figsize=(10, 2), dpi=200)
+    ax.plot(F_ss1[10, 1000:2800], lw=1, color='blue', label='F raw', alpha=.5)
+    ax.plot(baseline_ss1[10, 1000:2800], lw=1, color='orange', label=f'{DFF_PERCENTILE}% baseline', 
+            alpha=.5)
+    ax.set(ylabel='F a.u.')
+    ax.set_ylim(bottom=0)
+    ax.legend(frameon=False)
+    tax=ax.twinx()
+    tax.plot(dff_ss1[10, 1000:2800], lw=1, color='green', label='dF/F', alpha=.5)
+    tax.set(ylabel='dF/F')
+    tax.plot(dff_rsd_ss1[10, 1000:2800],lw=1, color='tab:red', label='rsd dF/F', alpha=.5)
+    tax.legend(frameon=False)
+    plt.show()
     
     # Session 2
     F_ss2 = F_all[:, nframes[0]:nframes[0]+nframes[1]]
     dff_ss2, baseline_ss2 = percentile_dff(
         F_ss2, window_size=DFF_WINDOW_SIZE, q=DFF_PERCENTILE, return_baseline=True
     )
-    dff_ss2 = utl.trace_filter(dff_ss2)
+    # dff_ss2 = trace_filter(dff_ss2)
     dff_rsd_ss2 = robust_filter_along_axis(dff_ss2, factor=2, gpu=1).get()
 
     # Session 3 (if exists)
@@ -270,7 +271,7 @@ def extract_session_traces(rec, concat_path, active_soma_only=True):
         dff_ss3, baseline_ss3 = percentile_dff(
             F_ss3, window_size=DFF_WINDOW_SIZE, q=DFF_PERCENTILE, return_baseline=True
         )
-        dff_ss3 = utl.trace_filter(dff_ss3)
+        # dff_ss3 = trace_filter(dff_ss3)
         dff_rsd_ss3 = robust_filter_along_axis(dff_ss3, factor=2, gpu=1).get()
 
     # -------------------------------------------------------------------------
@@ -316,7 +317,6 @@ if __name__ == "__main__":
     # Constants
     RECORDING_DIR = r"Z:\Jingyu\2P_Recording"
     RESULTS_DIR = r"Z:\Jingyu\Code\Python\2p_SCH23390_infusion\results_masks"
-    SESSION_INFO_PATH = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\infusion_session_info.parquet"
     OUTPUT_DIR = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\gcamp_profile"
     
     # dF/F calculation parameters
@@ -333,22 +333,16 @@ if __name__ == "__main__":
         'skewness_threshold': 0.8,
         'aspect_ratio_max': 3,
     }
-
-    # Load session metadata
-    df_session_info = pd.read_parquet(SESSION_INFO_PATH)
-
-    # Filter for high-quality sessions
-    rec_lst = df_session_info[
-        (df_session_info['perc_valid_trials_ss1'] > 0.6) &
-        (df_session_info['perc_valid_trials_ss2'] > 0.6) &
-        (df_session_info['latency'] == 20)
-    ]
+    
+    # selected subset of recordings
+    rec_lst = selected_rec_lst
     print(f"Found {len(rec_lst)} sessions to process")
 
     # Create output directory
     if not os.path.exists(OUTPUT_DIR):
         os.makedirs(OUTPUT_DIR)
-
+    
+    errors = []
     # Process each recording
     for rec_idx, rec in tqdm(rec_lst.iterrows(), total=len(rec_lst), desc="Processing sessions"):
     # test recording
@@ -357,7 +351,7 @@ if __name__ == "__main__":
         date = rec['date']
 
         concat_path = os.path.join(RECORDING_DIR, anm_id, f"{anm_id}-{date}", "concat")
-        output_path = os.path.join(OUTPUT_DIR, f"{anm_id}_{date}_df_gcamp_profile_10per_dff.parquet")
+        output_path = os.path.join(OUTPUT_DIR, f"{anm_id}_{date}_df_gcamp_profile_10perc_dff.parquet")
 
         if os.path.exists(output_path):
             print(f"{anm_id}-{date}: Already processed, skipping")
@@ -380,4 +374,5 @@ if __name__ == "__main__":
     
         except Exception as e:
             print(f"ERROR processing {anm_id}-{date}: {e}")
+            errors.append(f'{anm_id}-{date}')
             continue
