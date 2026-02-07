@@ -1,37 +1,91 @@
-# Two-Photon Calcium Imaging Analysis for Drug Infusion Experiments
+# Two-Photon Calcium Imaging Analysis Pipeline
 
-Analysis pipeline for investigating the effects of dopamine receptor antagonists on striatal neural populations using two-photon calcium imaging.
+Analysis pipeline for two-photon calcium imaging experiments, including drug infusion studies and dLight dopamine imaging.
 
 ## Overview
 
-This codebase processes and analyzes two-photon calcium imaging data from mice performing a reward-based running task, with pharmacological interventions including:
-- **SCH23390**: D1 dopamine receptor antagonist (various concentrations: 0.027-5 μM)
+This codebase processes and analyzes two-photon calcium imaging data from mice performing reward-based behavioral tasks. It supports two main experimental paradigms:
+
+### 1. Drug Infusion Experiments (GCaMP8s)
+Pharmacological interventions to study neuromodulatory effects on striatal neural populations:
+- **SCH23390**: D1 dopamine receptor antagonist (0.027-5 μM)
 - **Propranolol**: Beta-adrenergic receptor antagonist
 - **Muscimol**: GABA-A receptor agonist
 - **Control**: Vehicle solution
 
-## Project Structure
+### 2. dLight Dopamine Imaging
+Direct measurement of dopamine dynamics using dLight sensors:
+- **Axon-dLight**: Axonal dopamine release imaging
+- **GECO-dLight**: Combined calcium and dopamine imaging with regression analysis
+
+## Code structure
 
 ```
 code_mpfi_Jingyu/
-├── common/                     # Shared utility functions
-│   ├── plotting_functions_Jingyu.py  # Visualization library
-│   ├── utils_basic.py          # GPU-accelerated signal processing
-│   ├── utils_imaging.py        # Imaging utilities
-│   ├── utils_behaviour.py      # Behavioral data utilities
-│   └── shuffle_funcs.py        # Statistical shuffling functions
+├── common/                          # Shared utility functions
+│   ├── __init__.py
+│   ├── plotting_functions_Jingyu.py # Visualization library (~2800 lines)
+│   ├── utils_basic.py               # Basic utilities, trace filtering
+│   ├── utils_imaging.py             # GPU-accelerated dF/F calculation
+│   ├── utils_behaviour.py           # Behavioral data utilities
+│   ├── trial_selection.py           # Trial classification functions
+│   ├── robust_sd_filter.py          # Robust SD-based trace filtering
+│   ├── event_response_quantification.py  # Event-aligned response analysis
+│   ├── plot_single_trial_function.py     # Single trial visualization
+│   ├── shuffle_funcs.py             # Statistical shuffling
+│   └── mask/                        # ROI mask utilities
+│       ├── generate_masks.py
+│       ├── neuropil_mask.py
+│       └── utils_mask.py
 │
-├── drug_infusion/              # Main analysis pipeline
-│   ├── rec_lst_infusion.py     # Recording session metadata
-│   ├── df_roi_info.py          # ROI data extraction & DFF calculation
-│   ├── df_roi_info_drd1.py     # D1R neuron-specific analysis
-│   ├── drd1_detection.py       # Automated cell matching (GCaMP-tdTomato)
-│   ├── trial_selection.py      # Behavioral trial classification
-│   ├── utils_infusion.py       # Drug infusion analysis utilities
-│   ├── plot_functions.py       # Experiment-specific plotting
-│   └── update_session_info.py  # Session metadata management
+├── drug_infusion/                   # GCaMP drug infusion pipeline
+│   ├── __init__.py
+│   ├── rec_lst_infusion.py          # Recording session metadata (80+ sessions)
+│   ├── session_metadata.py          # Session info management
+│   ├── gcamp_signal_extraction.py   # ROI extraction from Suite2P
+│   ├── process_calcium_traces.py    # dF/F calculation pipeline
+│   ├── utils_infusion.py            # Drug response analysis utilities
+│   ├── plot_functions.py            # Population heatmaps, distributions
+│   ├── plot_pyrUp_Down_stats.py     # Pyramidal cell response statistics
+│   ├── plot_pyrUp_Down_single_session.py  # Single session analysis
+│   ├── plot_behaviour_trace.py      # Behavioral trace visualization
+│   ├── run-suite2p_GCaMP.py         # Suite2P batch processing
+│   └── defunc/                      # Deprecated scripts
 │
-└── dLight_imaging/             # dLight imaging experiments (planned)
+├── dlight_imaging/                  # dLight dopamine imaging
+│   ├── __init__.py
+│   ├── session_selection.py         # Session filtering utilities
+│   ├── session_selection_geco.py    # GECO-specific session selection
+│   │
+│   ├── Dbh_dlight/                  # DBH-Cre axon dLight imaging
+│   │   ├── recording_list.py        # Session metadata
+│   │   ├── plot_grid_single_session_profile.py
+│   │   ├── plot_grid_population_profile.py
+│   │   ├── plot_dilated_grid_stat.py
+│   │   ├── plot_dlightUp_grid_number_significance.py
+│   │   ├── decay_time_fitting.py    # Dopamine decay kinetics
+│   │   └── whole_FOV_correlation.py
+│   │
+│   ├── geco_dlight/                 # GECO + dLight dual imaging
+│   │   ├── recording_list.py
+│   │   └── plot_roi_population_profile_geco.py
+│   │
+│   ├── regression/                  # Regression-based signal unmixing
+│   │   ├── __init__.py
+│   │   ├── align_beh_imaging.py     # Behavior-imaging alignment
+│   │   ├── utils_regression.py      # Regression utilities
+│   │   ├── regression_axon_dlight.py
+│   │   ├── regression_geco_dlight.py
+│   │   ├── run_response_stats_axon_dlight.py
+│   │   ├── run_response_stats_geco_dlight.py
+│   │   └── utils_regression_geco/   # GECO-specific regression
+│   │       ├── Extract_dlight_masked_GECO_ROI_traces.py
+│   │       ├── Regression_Red_From_Green_ROIs_geco.py
+│   │       └── Regression_Red_From_Green_ROIs_Single_Trial_geco.py
+│   │
+│   └── run-suite2p-*.py             # Suite2P configuration scripts
+│
+└── requirements.txt
 ```
 
 ## Installation
@@ -44,7 +98,7 @@ code_mpfi_Jingyu/
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/code_mpfi_Jingyu.git
+git clone https://github.com/yuxi62/code_mpfi_Jingyu.git
 cd code_mpfi_Jingyu
 
 # Create virtual environment (recommended)
@@ -58,71 +112,80 @@ pip install -r requirements.txt
 pip install cupy-cuda11x
 ```
 
-## Data
+### For Spyder/Interactive Use
 
-**Note**: Data files are not included in this repository due to size constraints.
+```python
+import sys
+if r"Z:\Jingyu\code_mpfi_Jingyu" not in sys.path:
+    sys.path.insert(0, r"Z:\Jingyu\code_mpfi_Jingyu")
 
-### Expected Data Structure
-Behavioral data files should be placed in:
+# Then import modules
+from common.utils_imaging import percentile_dff
+from drug_infusion.rec_lst_infusion import rec_lst_infusion
 ```
-drug_infusion/behaviour_profile/
-├── AC986-20250606-02.pkl
-├── AC986-20250606-04.pkl
-└── ...
-```
-
-### Data Format
-Each `.pkl` file contains a dictionary with:
-- `run_onsets`: Trial start times
-- `run_offsets`: Trial end times
-- `reward_times`: Reward delivery timestamps
-- `lick_times`: Licking event timestamps
-- `non_stop_trials`: Trial validity flags
-- `non_fullstop_trials`: Trial validity flags
 
 ## Usage
 
-### 1. Update Session Information
-```python
-from drug_infusion.update_session_info import update_session_info
-from drug_infusion.rec_lst_infusion import rec_lst_infusion
+### Drug Infusion Analysis
 
-# Process all recording sessions
-for rec in rec_lst_infusion:
-    df_session_info = update_session_info(df_session_info, rec)
+```python
+# 1. Load session metadata
+from drug_infusion.rec_lst_infusion import rec_lst_infusion, df_session_info
+
+# 2. Process calcium traces
+from drug_infusion.utils_infusion import load_profile, calculate_ratio, sort_response
+
+# 3. Analyze responses
+df_profile = load_profile(rec)
+df_profile = calculate_ratio(df_profile, session='ss2', ...)
+df_profile = sort_response(df_profile, thresh_up=1.5, thresh_down=0.67)
 ```
 
-### 2. Extract ROI Data
+### dLight Imaging Analysis
+
 ```python
-from drug_infusion.df_roi_info import extract_roi_data
-# Process calcium imaging data and calculate DFF traces
+# 1. Load recording list
+from dlight_imaging.Dbh_dlight.recording_list import rec_lst
+
+# 2. Run regression to separate dLight from motion artifacts
+from dlight_imaging.regression.regression_axon_dlight import run_regression
+
+# 3. Quantify run-onset responses
+from dlight_imaging.regression.run_response_stats_axon_dlight import analyze_responses
 ```
 
-### 3. Analyze D1R Neurons
-```python
-from drug_infusion.drd1_detection import mser_detection
-# Match GCaMP signals to tdTomato-labeled D1R neurons
-```
+## Key Analysis Features
 
-## Key Analysis Steps
+### Signal Processing
+- **percentile_dff()**: GPU-accelerated dF/F calculation using rolling percentile baseline
+- **trace_filter_sd()**: Outlier removal based on standard deviation threshold
+- **robust_sd_filter()**: Robust median-based filtering
 
-1. **Trial Validation**: Filter valid trials based on reward delivery and running behavior
-2. **DFF Calculation**: Compute ΔF/F₀ from raw calcium fluorescence
-3. **Cell Classification**: Identify D1R-expressing neurons via fluorescent labeling
-4. **Response Quantification**: Calculate pre/post-stimulus response ratios
-5. **Population Analysis**: Generate heatmaps and statistical summaries
+### Trial Selection
+- Automatic trial validation (reward delivery, running behavior)
+- Configurable exclusion criteria (first N trials, stopped trials)
+
+### Response Classification
+- **pyrUp/pyrDown**: Cells with increased/decreased run-onset response
+- Threshold-based classification with configurable ratios
+
+### Visualization
+- Population heatmaps sorted by response magnitude
+- Mean trace plots with SEM shading
+- Paired/unpaired statistical comparisons
 
 ## Dependencies
 
 | Package | Purpose |
 |---------|---------|
 | NumPy | Numerical computing |
-| Pandas | Data manipulation |
+| Pandas | Data manipulation & parquet I/O |
 | SciPy | Scientific computing |
 | CuPy | GPU-accelerated arrays |
 | OpenCV | Image processing |
 | Matplotlib | Visualization |
 | scikit-image | Image analysis |
+| xarray | NetCDF data loading |
 | tqdm | Progress bars |
 
 ## Author
@@ -144,4 +207,4 @@ If you use this code in your research, please cite:
 ## Acknowledgments
 
 - Max Planck Florida Institute for Neuroscience
-- [Additional acknowledgments]
+- Wang Lab
