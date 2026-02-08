@@ -10,15 +10,15 @@ Analysis code for LC_HPC_manuscript, including dLight and drug infusion calcium 
 code_mpfi_Jingyu/
 ├── common/                          # Shared utility functions
 │   ├── __init__.py
-│   ├── plotting_functions_Jingyu.py # Visualization library (~2800 lines)
-│   ├── utils_basic.py               # Basic utilities, trace filtering
-│   ├── utils_imaging.py             # GPU-accelerated dF/F calculation
-│   ├── utils_behaviour.py           # Behavioral data utilities
-│   ├── trial_selection.py           # Trial classification functions
-│   ├── robust_sd_filter.py          # Robust SD-based trace filtering
-│   ├── event_response_quantification.py  # Event-aligned response analysis
-│   ├── plot_single_trial_function.py     # Single trial visualization
-│   ├── shuffle_funcs.py             # Statistical shuffling
+│   ├── plotting_functions_Jingyu.py # visualization library
+│   ├── utils_basic.py               # basic utilities, trace filtering
+│   ├── utils_imaging.py             # imaging data utilities
+│   ├── utils_behaviour.py           # behavioral data utilities
+│   ├── trial_selection.py           # trial classification functions
+│   ├── robust_sd_filter.py          # robust sd based trace filtering
+│   ├── event_response_quantification.py  # event-aligned response analysis
+│   ├── plot_single_trial_function.py     # single trial visualization
+│   ├── shuffle_funcs.py             # statistical shuffling
 │   └── mask/                        # ROI mask utilities
 │       ├── generate_masks.py
 │       ├── neuropil_mask.py
@@ -26,45 +26,45 @@ code_mpfi_Jingyu/
 │
 ├── drug_infusion/                   # GCaMP drug infusion pipeline
 │   ├── __init__.py
-│   ├── rec_lst_infusion.py          # Recording session metadata (80+ sessions)
-│   ├── session_metadata.py          # Session info management
-│   ├── gcamp_signal_extraction.py   # ROI extraction from Suite2P
+│   ├── rec_lst_infusion.py          # recording session metadata (80+ sessions)
+│   ├── session_metadata.py          # session info management
+│   ├── gcamp_signal_extraction.py   # extract GCaMP signals from across ROIs across session
 │   ├── process_calcium_traces.py    # dF/F calculation pipeline
 │   ├── utils_infusion.py            # Drug response analysis utilities
-│   ├── plot_functions.py            # Population heatmaps, distributions
-│   ├── plot_pyrUp_Down_stats.py     # Pyramidal cell response statistics
-│   ├── plot_pyrUp_Down_single_session.py  # Single session analysis
-│   ├── plot_behaviour_trace.py      # Behavioral trace visualization
-│   ├── run-suite2p_GCaMP.py         # Suite2P batch processing
-│   └── defunc/                      # Deprecated scripts
+│   ├── plot_functions.py            # plotting functions exclusive for drug infusion data
+│   ├── plot_pyrUp_Down_stats.py     # pyrUp and pyrDown cell response statistics
+│   ├── plot_pyrUp_Down_single_session.py  # single session plot
+│   ├── plot_behaviour_trace.py      # behavioral trace visualization
+│   ├── run-suite2p_GCaMP.py         # movie registration and ROI detection by suite2p
+│   └── defunc/                      # will be deleted
 │
-├── dlight_imaging/                  # dLight dopamine imaging
+├── dlight_imaging/                  
 │   ├── __init__.py
-│   ├── session_selection.py         # Session filtering utilities
-│   ├── session_selection_geco.py    # GECO-specific session selection
+│   ├── session_selection.py         # recordong seleciton for Dbh-dLight
+│   ├── session_selection_geco.py    # recordong seleciton for GECO-dLight
 │   │
-│   ├── Dbh_dlight/                  # DBH-Cre axon dLight imaging
-│   │   ├── recording_list.py        # Session metadata
+│   ├── Dbh_dlight/                  # Dbh-axond Light imaging
+│   │   ├── recording_list.py        # session metadata
 │   │   ├── plot_grid_single_session_profile.py
 │   │   ├── plot_grid_population_profile.py
 │   │   ├── plot_dilated_grid_stat.py
 │   │   ├── plot_dlightUp_grid_number_significance.py
-│   │   ├── decay_time_fitting.py    # Dopamine decay kinetics
+│   │   ├── decay_time_fitting.py    
 │   │   └── whole_FOV_correlation.py
 │   │
-│   ├── geco_dlight/                 # GECO + dLight dual imaging
+│   ├── geco_dlight/                 # GECO + dLight imaging
 │   │   ├── recording_list.py
 │   │   └── plot_roi_population_profile_geco.py
 │   │
-│   ├── regression/                  # Regression-based signal unmixing
+│   ├── regression/                  
 │   │   ├── __init__.py
-│   │   ├── align_beh_imaging.py     # Behavior-imaging alignment
-│   │   ├── utils_regression.py      # Regression utilities
+│   │   ├── align_beh_imaging.py     # behavior-imaging alignment
+│   │   ├── utils_regression.py      # regression utilities
 │   │   ├── regression_axon_dlight.py
 │   │   ├── regression_geco_dlight.py
 │   │   ├── run_response_stats_axon_dlight.py
 │   │   ├── run_response_stats_geco_dlight.py
-│   │   └── utils_regression_geco/   # GECO-specific regression
+│   │   └── utils_regression_geco/   # GECO-specific regression utilities
 │   │       ├── Extract_dlight_masked_GECO_ROI_traces.py
 │   │       ├── Regression_Red_From_Green_ROIs_geco.py
 │   │       └── Regression_Red_From_Green_ROIs_Single_Trial_geco.py
