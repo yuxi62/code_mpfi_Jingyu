@@ -269,72 +269,36 @@ def percentile_dff(
     baseline : ndarray, optional
         Baseline used for normalization, same shape as F_array (if return_baseline=True).
     """
-    F_array = np.asarray(F_array)
-    original_shape = F_array.shape
-    was_1d = F_array.ndim == 1
-
-    # Ensure 2D array for consistent processing
-    if was_1d:
-        F_array = F_array[np.newaxis, :]
-
-    # Normalize t_axis for 2D
-    if t_axis == -1:
-        t_axis = 1
-
-    # Identify valid ROIs (not all NaN along time axis)
-    if t_axis == 1:
-        valid_mask = ~np.all(np.isnan(F_array), axis=1)
-    else:  # t_axis == 0
-        valid_mask = ~np.all(np.isnan(F_array), axis=0)
-
-    # Initialize output arrays with NaN
-    dff_out = np.full(F_array.shape, np.nan, dtype=np.float32)
-    baseline_out = np.full(F_array.shape, np.nan, dtype=np.float32)
-
-    # Only process valid ROIs
-    if np.any(valid_mask):
-        if t_axis == 1:
-            valid_data = F_array[valid_mask, :]
+    array = cp.asarray(F_array)
+    
+    # Determine filter size so the percentile filter runs only along time axis
+    if array.ndim == 1:
+        # t_axis_eff = 0
+        filter_size = window_size
+    elif array.ndim == 2:
+        if t_axis in (-1, 1):
+            # t_axis_eff = 1
+            filter_size = (1, window_size)
+        elif t_axis == 0:
+            # t_axis_eff = 0
+            filter_size = (window_size, 1)
         else:
-            valid_data = F_array[:, valid_mask]
-
-        array = cp.asarray(valid_data)
-
-        # Determine filter size so the percentile filter runs only along time axis
-        if array.ndim == 1:
-            filter_size = window_size
-        elif array.ndim == 2:
-            if t_axis == 1:
-                filter_size = (1, window_size)
-            elif t_axis == 0:
-                filter_size = (window_size, 1)
-            else:
-                raise ValueError("For 2D input, t_axis must be 0, 1, or -1.")
-        else:
-            raise ValueError("F_array must be 1D or 2D.")
-
-        baseline = percentile_filter(array, q, size=filter_size, mode='reflect')
-        epsilon = 1e-8
-
-        dff = (array - baseline) / (baseline + epsilon)
-
-        # Place results back into output arrays
-        if t_axis == 1:
-            dff_out[valid_mask, :] = dff.get()
-            baseline_out[valid_mask, :] = baseline.get()
-        else:
-            dff_out[:, valid_mask] = dff.get()
-            baseline_out[:, valid_mask] = baseline.get()
-
-    # Restore original shape if input was 1D
-    if was_1d:
-        dff_out = dff_out.squeeze(axis=0)
-        baseline_out = baseline_out.squeeze(axis=0)
-
+            raise ValueError("For 2D input, t_axis must be 0, 1, or -1.")
+    else:
+        raise ValueError("F_array must be 1D or 2D.")
+        
+    baseline = percentile_filter(array, q, size=filter_size)
+    # epsilon = 0.1
+    epsilon = 1e-8
+    
+    # baseline = cp.maximum(1, baseline)
+    
+    dff = (array - baseline) / (baseline + epsilon)
+    
     if return_baseline:
-        return dff_out, baseline_out
+        return dff.get(), baseline.get()
 
-    return dff_out
+    return dff.get()
 
 
 def nanpercentile_filter(input, percentile, size, output=None, mode="reflect", cval=0.0, origin=0):

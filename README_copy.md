@@ -1,0 +1,235 @@
+# LC_HPC_manuscript Code Analysis Pipeline
+
+Analysis code for LC_HPC_manuscript, including dLight and drug infusion calcium two-photon imagin.
+
+## Overview
+
+
+## Code structure
+
+```
+code_mpfi_Jingyu/
+├── common/                          # Shared utility functions
+│   ├── __init__.py
+│   ├── plotting_functions_Jingyu.py # Visualization library (~2800 lines)
+│   ├── utils_basic.py               # Basic utilities, trace filtering
+│   ├── utils_imaging.py             # GPU-accelerated dF/F calculation
+│   ├── utils_behaviour.py           # Behavioral data utilities
+│   ├── trial_selection.py           # Trial classification functions
+│   ├── robust_sd_filter.py          # Robust SD-based trace filtering
+│   ├── event_response_quantification.py  # Event-aligned response analysis
+│   ├── plot_single_trial_function.py     # Single trial visualization
+│   ├── shuffle_funcs.py             # Statistical shuffling
+│   └── mask/                        # ROI mask utilities
+│       ├── generate_masks.py
+│       ├── neuropil_mask.py
+│       └── utils_mask.py
+│
+├── drug_infusion/                   # GCaMP drug infusion pipeline
+│   ├── __init__.py
+│   ├── rec_lst_infusion.py          # Recording session metadata (80+ sessions)
+│   ├── session_metadata.py          # Session info management
+│   ├── gcamp_signal_extraction.py   # ROI extraction from Suite2P
+│   ├── process_calcium_traces.py    # dF/F calculation pipeline
+│   ├── utils_infusion.py            # Drug response analysis utilities
+│   ├── plot_functions.py            # Population heatmaps, distributions
+│   ├── plot_pyrUp_Down_stats.py     # Pyramidal cell response statistics
+│   ├── plot_pyrUp_Down_single_session.py  # Single session analysis
+│   ├── plot_behaviour_trace.py      # Behavioral trace visualization
+│   ├── run-suite2p_GCaMP.py         # Suite2P batch processing
+│   └── defunc/                      # Deprecated scripts
+│
+├── dlight_imaging/                  # dLight dopamine imaging
+│   ├── __init__.py
+│   ├── session_selection.py         # Session filtering utilities
+│   ├── session_selection_geco.py    # GECO-specific session selection
+│   │
+│   ├── Dbh_dlight/                  # DBH-Cre axon dLight imaging
+│   │   ├── recording_list.py        # Session metadata
+│   │   ├── plot_grid_single_session_profile.py
+│   │   ├── plot_grid_population_profile.py
+│   │   ├── plot_dilated_grid_stat.py
+│   │   ├── plot_dlightUp_grid_number_significance.py
+│   │   ├── decay_time_fitting.py    # Dopamine decay kinetics
+│   │   └── whole_FOV_correlation.py
+│   │
+│   ├── geco_dlight/                 # GECO + dLight dual imaging
+│   │   ├── recording_list.py
+│   │   └── plot_roi_population_profile_geco.py
+│   │
+│   ├── regression/                  # Regression-based signal unmixing
+│   │   ├── __init__.py
+│   │   ├── align_beh_imaging.py     # Behavior-imaging alignment
+│   │   ├── utils_regression.py      # Regression utilities
+│   │   ├── regression_axon_dlight.py
+│   │   ├── regression_geco_dlight.py
+│   │   ├── run_response_stats_axon_dlight.py
+│   │   ├── run_response_stats_geco_dlight.py
+│   │   └── utils_regression_geco/   # GECO-specific regression
+│   │       ├── Extract_dlight_masked_GECO_ROI_traces.py
+│   │       ├── Regression_Red_From_Green_ROIs_geco.py
+│   │       └── Regression_Red_From_Green_ROIs_Single_Trial_geco.py
+│   │
+│   └── run-suite2p-*.py             # Suite2P configuration scripts
+│
+└── requirements.txt
+```
+
+## Installation
+
+### Requirements
+- Python 3.8+
+- NVIDIA GPU with CUDA support (recommended for large datasets)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yuxi62/code_mpfi_Jingyu.git
+cd code_mpfi_Jingyu
+
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# For GPU acceleration (adjust CUDA version as needed)
+pip install cupy-cuda11x
+```
+
+### For Spyder/Interactive Use
+
+```python
+import sys
+if r"Z:\Jingyu\code_mpfi_Jingyu" not in sys.path:
+    sys.path.insert(0, r"Z:\Jingyu\code_mpfi_Jingyu")
+
+# Then import modules
+from common.utils_imaging import percentile_dff
+from drug_infusion.rec_lst_infusion import rec_lst_infusion
+```
+
+## Method
+### recording selection
+Recordings with good behaviour performance and minimum movement artifact are selected for analysis.
+```python
+    MIN_LICK_IDX = 0.85 # lick selectivity index
+    MIN_MAX_SPEED = 55 # speed, cm/s
+    MIN_PERC_VALID = 0.6 # % valid trials
+    MAX_TRIAL_LENGTH = 6000 # trial length, run onset to next trial's run onset, ms
+    MAX_SIG_SPEED_CORR = 0.3 # max correlatio with speed, to exclude sessions with clear movement
+```
+SIG_SPEED_CORR: correlation between the whole FOV dLight signal and the running speed. calculated by 'Z:\Jingyu\code_mpfi_Jingyu\dlight_imaging\Dbh_dlight\whole_FOV_correlation.py'
+Other criteria are generated by "Z:\Jingyu\code_mpfi_Jingyu\dlight_imaging\session_selection.py"
+
+### Region of interest (ROI) detection
+#### GECO ROIs
+Description: GECO rois are detected by pretrained model '''cyto''' from Cellpose algorithm based one enhanced image of FOV (mean image filtered with a min-max filter shown in background)
+#### GCaMP ROIs
+GCaMP rois are detected by cell detection algorithm of suite2p based on activities using following settings:
+```python
+ops['spares_mode'] = True
+ops['denoise'] = O
+ops['spatial_scale'] = O
+ops['connected'] = 1
+ops['threshold_scaling'] = 1.0
+ops['max_overlap'] = 0.75
+ops['max_iterations'] = 20
+ops['high_pass'] = 100.0
+ops['spatial_hp_detect'] = 25
+```
+#### dLight and GECO membrane mask
+dlight and geco membrane mask was created using function:  generate_adaptive_membrane_mask in "Z:\Jingyu\code_mpfi_Jingyu\common\mask\utils_mask.py"
+Description:
+The membrane mask was used to determine pixels with dlight or GECO expression.
+1. dlight mean image smoothed with gaussian, sigma=1.5
+2. coefficient of variation of 30x30 pix image block was calculated across FOV, divided FOV to cell layer and non-cell layer. Cell layer are somas showing dlight membrane expression. non cell layer has dense dlight expression on dendrites/axons. 
+3. Cell layer membrane mask was generated by watershed (skimage.segmentation.watershed).
+4. non-cell layer mask was generated by dynamic thresholded by skimage.filters.threshold_local(block_size=5, method='gaussian') >> to filter out small local dark region.
+
+#### dLight and GECO neuropil mask
+Description:
+Neuropil mask is defined as a square region surrounding the axon or soma rois. The start of neuropil in 3 pixel away from real roi mask. In each iteration, the neuropil square are expended in all 4 directions by 5 pix until it's total pixel number reaches the variable: min_neuropil_pixels.(function: create_neuropil_masks in "Z:\Jingyu\code_mpfi_Jingyu\common\mask\neuropil_mask.py")
+
+#### dlight background mask
+function: dlight_regressor_mask in "Z:\Jingyu\code_mpfi_Jingyu\common\mask\utils_mask.py"
+Description: 
+For dlight imgaing with Dbh axons, FOV (512x512 pix) was firstly divided into 32x32 (16pix) grid. dlight background mask are pixels with dlight expression within in a 3 pix binary dilation (scipy.ndimage.binary_dilation, iterations=3) region for axon mask with in each grid, excluding the original axon mask.
+For dlight imgaing with GECO, dlight background mask are pixels with dlight expression within in a 3 pix binary dilation (scipy.ndimage.binary_dilation, iterations=3) region for a GECO roi, excluding the original roi mask.
+
+#### axon mask 
+Description:
+
+#### axon dLight regression
+Description:
+1. FOV (512x512 pix) was divided into 32x32 (16pix) grid. dLight signal were extracted from axon mask with dlight expression within each grid and it's neuropil mask. tdTomato signals were extracted from axon mask within each grid. (function traces_extraction_parallel in "Z:\Jingyu\code_mpfi_Jingyu\dlight_imaging\regression\utils_regression.py"
+2. Extracted dlight signals were corrected by dlight neuropil signals times a factor 0.2.
+```
+dlight_corr = original_dlight_traces -0.2*dlight_neu
+```
+3. A linear fitting between dLight signal and dLight background signal + axon tdTomato signal was used to correct dLight data for potential movement artefact. (function: single_trial_regression_parallel in "Z:\Jingyu\code_mpfi_Jingyu\dlight_imaging\regression\utils_regression.py") The fitting was done for each trial segment (90 frames pre and 120 frames post a run-onset). After obtaining the coefficient for dLight background signal (green_regressor) β1 and tdTomato signal (red_regressor) β2, the artefact was estimated by the time-varying components of two regressors and subtract from neuropil-corrected dlight signal. This is the dlight signal used in the following analysis steps.
+```
+artefact_est = β1*(green_regressor - penname(green_regressor))+ β2*(red_regressor - np.nanmean(red_regressor))
+
+dlight_clean  = dlight_corr - artefact_est
+```
+
+#### GECO dLight regression
+Description:
+1. GECO roi and neuropil signals were extracted by suite2p from masks described in the previous section (Region of interest (ROI) detection, GECO_ROIs)
+2. For each GECO roi, dlight signal was extracted from roi mask with dlight expression.
+3. Extracted GECO signal is corrected by GECO neuropil signal times a factor 0.7. Extracted dlight signals were corrected by dlight neuropil signals times a factor 0.2.
+```
+geco_corr = original_geco_traces -0.7*geco_neu
+
+dlight_corr = original_dlight_traces -0.2*dlight_neu
+```
+3. GECO signals that are (< trace median + 2 trace robust sd) were considered as GECO baseline signals which contain potential movement artefact.
+2. A linear fitting between dLight signal and dLight background signals + GECO baseline signals was used to correct dLight data for potential movement artefact. (function: run_and_save_motion_correction_results in "Z:\Jingyu\code_mpfi_Jingyu\dlight_imaging\regression\utils_regression_geco\Regression_Red_From_Green_ROIs_Single_Trial_geco.py") The fitting was done for each trial segment (90 frames pre and 120 frames post a run-onset, a segement with less than 100 GECO baseline datapoints will be extended until 100 GECO baseline datapoints included). After obtaining the coefficient for dLight background signal (green_regressor) β1 and GECO baseline signals (red_regressor) β2, the artefact was estimated by the time-varying components of two regressors and subtract from neuropil-corrected dlight signal. This is the dlight signal used in the following analysis steps.
+```
+artefact_est = β1*(green_regressor - penname(green_regressor))+ β2*(red_regressor - np.nanmean(red_regressor))
+
+dlight_clean  = dlight_corr - artefact_est
+```
+
+### Drug Infusion Analysis
+
+
+
+
+## Dependencies
+
+| Package | Purpose |
+|---------|---------|
+| NumPy | Numerical computing |
+| Pandas | Data manipulation & parquet I/O |
+| SciPy | Scientific computing |
+| CuPy | GPU-accelerated arrays |
+| OpenCV | Image processing |
+| Matplotlib | Visualization |
+| scikit-image | Image analysis |
+| xarray | NetCDF data loading |
+| tqdm | Progress bars |
+
+## Author
+
+Jingyu Cao
+Max Planck Florida Institute for Neuroscience
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Citation
+
+If you use this code in your research, please cite:
+```
+[Citation information to be added upon publication]
+```
+
+## Acknowledgments
+
+- Max Planck Florida Institute for Neuroscience
+- Wang Lab

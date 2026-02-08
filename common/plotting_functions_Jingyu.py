@@ -8,6 +8,7 @@ import os
 import sys
 import numpy as np
 import pandas as pd
+from pathlib import Path
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, ListedColormap, to_rgb
 if ("Z:\Jingyu\Code\Python" in sys.path) == False:
@@ -29,97 +30,18 @@ def mpl_formatting(): # from Dinghao, for plotting editable pdf with matplot
         'ytick.labelsize': 9
         })
 mpl_formatting() 
-# def plot_two_traces_with_binned_stats(profile_a, profile_b, ax=None,
-#                                       test='ranksum',
-#                                       time_windows=[(-0.5, 0.5), (0.5, 1.5), (1.5, 2.5), (2.5, 3.5)],
-#                                       baseline_window=(-0.5, 0),
-#                                       labels = ['a', 'b'],
-#                                       colors = ['steelblue', 'orange'],
-#                                       bef=1, aft=4, sample_freq=30
-#                                       ):
-#     results = []
-#     # perfom statistic test for each bin
-#     if baseline_window is not None:
-#         win_slice = slice(int((bef + baseline_window[0]) * 30), 
-#                           int((bef + baseline_window[1]) * 30))
-#         profile_a_baseline = np.nanmean(np.vstack(profile_a)[:, win_slice], axis=-1)
-#         profile_b_baseline = np.nanmean(np.vstack(profile_b)[:, win_slice], axis=-1)
-#     else:
-#         profile_a_baseline=0; profile_b_baseline=0
-        
-#     for window in time_windows:
-#         # Convert time window to frame indices (assuming 30 Hz)
-#         win_slice = slice(int((bef + window[0]) * 30), int((bef + window[1]) * 30))
-        
-#         # Segment and average each condition
-#         profile_a_seg = np.vstack(profile_a)[:, win_slice]
-#         profile_b_seg = np.vstack(profile_b)[:, win_slice]
+
+def save_fig(fig, OUT_DIR_FIG, fig_name='', save=True):
+    fig.tight_layout()
+    if save:
+        OUT_DIR_FIG = Path(OUT_DIR_FIG)
+        for form in ['png', 'pdf',]:
+            plt.savefig(OUT_DIR_FIG/f'{fig_name}.{form}',
+                        dpi=300)
+    else:
+        plt.show()
+    plt.close()
     
-#         profile_a_mean = np.nanmean(profile_a_seg, axis=-1)
-#         profile_b_mean = np.nanmean(profile_b_seg, axis=-1)
-        
-#         profile_a_mean = profile_a_mean - profile_a_baseline
-#         profile_b_mean = profile_b_mean - profile_b_baseline
-
-#         # Perform tests
-#         tests = {
-#             # "paired_ttest": ttest_rel(profile_a_mean, profile_b_mean, nan_policy='omit'),
-#             "ind_ttest": ttest_ind(profile_a_mean, profile_b_mean, nan_policy='omit'),
-#             "ranksum": ranksums(profile_a_mean, profile_b_mean),
-#             # "wilcoxon": wilcoxon(profile_a_mean, profile_b_mean, nan_policy='omit'),
-#         }
-#         # Store results
-#         results.append({
-#             "window": f"{window[0]}–{window[1]} s",
-#             **{k + "_stat": v.statistic for k, v in tests.items()},
-#             **{k + "_pval": v.pvalue for k, v in tests.items()},
-#         })
-
-#     # Convert to DataFrame
-#     df_stats = pd.DataFrame(results)
-    
-#     pad_frac = 0.08
-#     fs=8
-#     color='k'
-#     lw=1
-#     if ax is None:
-#         fig, ax = plt.subplots(figsize=(3,3), dpi=300)
-    
-#     xaxis = np.arange(sample_freq*(bef+aft))/sample_freq-bef
-#     if baseline_window is not None:
-#         plot_mean_trace(np.vstack(profile_a)-profile_a_baseline[:, None], ax, xaxis, color=colors[0], label=f'{labels[0]}')
-#         plot_mean_trace(np.vstack(profile_b)-profile_b_baseline[:, None], ax, xaxis, color=colors[1], label=f'{labels[1]}')
-#     else:
-#         plot_mean_trace(np.vstack(profile_a), ax, xaxis, color=colors[0], label=f'{labels[0]}')
-#         plot_mean_trace(np.vstack(profile_b), ax, xaxis, color=colors[1], label=f'{labels[1]}')
-#     col = f"{test}_pval"
-#     if col not in df_stats.columns:
-#         raise ValueError(f"Column '{col}' not found in df_stats. Available columns: {list(df_stats.columns)}")
-
-#     pvals = df_stats[col].to_numpy()
-
-#     # Adjust ylim to make space
-#     y0, y1 = ax.get_ylim()
-#     yr = y1 - y0
-#     extra = (len(time_windows) + 1) * pad_frac * yr
-#     ax.set_ylim(y0, y1 + extra)
-#     base_top = y1
-    
-#     for i, (w, p) in enumerate(zip(time_windows, pvals)):
-#         y = base_top
-#         # y = base_top + (i + 1) * pad_frac * yr
-#         x0, x1 = w[0]+0.02, w[1]-0.02
-#         ax.plot([x0, x1], [y, y], color=color, lw=lw)
-#         xm = 0.5 * (x0 + x1)
-#         txt = f"p={p:.4f}" if np.isfinite(p) else "n/a"
-#         ax.text(xm, y, txt, ha='center', va='bottom', fontsize=fs, color=color)
-        
-#     ax.text(0.5, y+0.1*yr, test, ha='center', va='bottom', fontsize=fs, color=color)
-#     ax.text(0.5, y+0.2*yr, f'baseline={baseline_window}', ha='center', va='bottom', fontsize=fs, color=color)
-#     ax.spines[['top', 'right']].set_visible(False)
-#     ax.legend(frameon=False, loc='lower left')
-#     return fig, ax
-
 def plot_two_traces_with_binned_stats(profile_a, profile_b, ax=None,
                                       test='ranksum',
                                       time_windows=[(-0.5, 0.5), (0.5, 1.5), (1.5, 2.5), (2.5, 3.5)],
@@ -350,14 +272,14 @@ def plot_bar_with_paired_scatter(
     # paired points + connecting lines (no jitter)
     for y0, y1 in zip(ctrl, stim):
         ax.plot([0, 1], [y0, y1], lw=0.6, color='k', alpha=.3, zorder=3)
-    # ax.scatter(np.zeros(len(ctrl)), ctrl, s=8, color=colors[0],
-    #            edgecolor='none', alpha=.5, zorder=4)
-    # ax.scatter(np.ones(len(stim)),  stim, s=8, color=colors[1],
-    #            edgecolor='none', alpha=.5, zorder=4)
-    ax.scatter(np.zeros(len(ctrl)), ctrl, s=8, color='grey',
+    ax.scatter(np.zeros(len(ctrl)), ctrl, s=8, color=colors[0],
                edgecolor='none', alpha=.5, zorder=4)
-    ax.scatter(np.ones(len(stim)),  stim, s=8, color='grey',
+    ax.scatter(np.ones(len(stim)),  stim, s=8, color=colors[1],
                edgecolor='none', alpha=.5, zorder=4)
+    # ax.scatter(np.zeros(len(ctrl)), ctrl, s=8, color='grey',
+    #            edgecolor='none', alpha=.5, zorder=4)
+    # ax.scatter(np.ones(len(stim)),  stim, s=8, color='grey',
+    #            edgecolor='none', alpha=.5, zorder=4)
 
     # stats (paired + a couple of unpaired references)
     try:
@@ -409,6 +331,34 @@ def plot_bar_with_paired_scatter(
     annotate_sig(ax, 0, 1, y2, f"paired t-test p={t_p:.3g} ({sigstars(t_p)})", bump)
     annotate_sig(ax, 0, 1, y3, f"t-test ind p={t_ind_p:.3g} ({sigstars(t_ind_p)})", bump)
     annotate_sig(ax, 0, 1, y4, f"ranksum p={ranksum_p:.3g} ({sigstars(ranksum_p)})", bump)
+
+    # Bring axes, labels, spines, error bars, and annotations to front for Illustrator editing
+    front_zorder = 10
+    for spine in ax.spines.values():
+        spine.set_zorder(front_zorder)
+    ax.xaxis.set_zorder(front_zorder)
+    ax.yaxis.set_zorder(front_zorder)
+    for label in ax.xaxis.get_ticklabels() + ax.yaxis.get_ticklabels():
+        label.set_zorder(front_zorder)
+    for tick in ax.xaxis.get_ticklines() + ax.yaxis.get_ticklines():
+        tick.set_zorder(front_zorder)
+    ax.xaxis.label.set_zorder(front_zorder)
+    ax.yaxis.label.set_zorder(front_zorder)
+    ax.title.set_zorder(front_zorder)
+    for text in ax.texts:
+        text.set_zorder(front_zorder)
+    for line in ax.lines:
+        line.set_zorder(front_zorder)
+    for container in ax.containers:
+        if hasattr(container, 'errorbar') and container.errorbar is not None:
+            for item in container.errorbar:
+                if item is not None:
+                    if hasattr(item, '__iter__'):
+                        for line in item:
+                            if line is not None and hasattr(line, 'set_zorder'):
+                                line.set_zorder(front_zorder)
+                    elif hasattr(item, 'set_zorder'):
+                        item.set_zorder(front_zorder)
 
     return {
         'wilcoxon':   {'stat': float(w_stat),    'p': float(w_p),       'n': int(len(ctrl))},
@@ -474,14 +424,14 @@ def plot_bar_with_unpaired_scatter(
     rng = np.random.default_rng(seed)
     x_ctrl = -jitter + 2*jitter*rng.random(len(ctrl)) + 0
     x_stim = -jitter + 2*jitter*rng.random(len(stim)) + 1
-    # ax.scatter(x_ctrl, ctrl, s=point_size, color=colors[0],
-    #            edgecolor='none', alpha=.6, zorder=4)
-    # ax.scatter(x_stim, stim, s=point_size, color=colors[1],
-    #            edgecolor='none', alpha=.6, zorder=4)
-    ax.scatter(x_ctrl, ctrl, s=point_size, color='grey',
+    ax.scatter(x_ctrl, ctrl, s=point_size, color=colors[0],
                edgecolor='none', alpha=.6, zorder=4)
-    ax.scatter(x_stim, stim, s=point_size, color='grey',
+    ax.scatter(x_stim, stim, s=point_size, color=colors[1],
                edgecolor='none', alpha=.6, zorder=4)
+    # ax.scatter(x_ctrl, ctrl, s=point_size, color='grey',
+    #            edgecolor='none', alpha=.6, zorder=4)
+    # ax.scatter(x_stim, stim, s=point_size, color='grey',
+    #            edgecolor='none', alpha=.6, zorder=4)
 
     # stats
     t_stat, t_p = ttest_ind(ctrl, stim, equal_var=not use_welch)
@@ -494,12 +444,13 @@ def plot_bar_with_unpaired_scatter(
 
     if ylim is None:
         data_min = np.nanmin([np.nanmin(ctrl), np.nanmin(stim), means.min() - errs.max()])
-        y_min0 = min(0.0, float(data_min))
+        y_min0 = float(data_min)
+        # y_min0 = min(0.0, float(data_min))
         y_max0 = float(top_y)
         base_range = max(1e-6, y_max0 - y_min0)
         pad_top = 0.25 * base_range
         pad_bot = 0.05 * base_range
-        ylims = (0, y_max0 + pad_top)
+        ylims = (y_min0-pad_bot, y_max0 + pad_top)
     else:
         ylims = ylim
 
@@ -522,6 +473,34 @@ def plot_bar_with_unpaired_scatter(
     y_t    = ylims[1] - 2.2*bump
     annotate_sig(ax, 0, 1, y_t,   f"Welch t-test p={t_p:.3g} ({sigstars(t_p)})", bump)
     annotate_sig(ax, 0, 1, y_rank, f"ranksum p={rs_p:.3g} ({sigstars(rs_p)})", bump)
+
+    # Bring axes, labels, spines, error bars, and annotations to front for Illustrator editing
+    front_zorder = 10
+    for spine in ax.spines.values():
+        spine.set_zorder(front_zorder)
+    ax.xaxis.set_zorder(front_zorder)
+    ax.yaxis.set_zorder(front_zorder)
+    for label in ax.xaxis.get_ticklabels() + ax.yaxis.get_ticklabels():
+        label.set_zorder(front_zorder)
+    for tick in ax.xaxis.get_ticklines() + ax.yaxis.get_ticklines():
+        tick.set_zorder(front_zorder)
+    ax.xaxis.label.set_zorder(front_zorder)
+    ax.yaxis.label.set_zorder(front_zorder)
+    ax.title.set_zorder(front_zorder)
+    for text in ax.texts:
+        text.set_zorder(front_zorder)
+    for line in ax.lines:
+        line.set_zorder(front_zorder)
+    for container in ax.containers:
+        if hasattr(container, 'errorbar') and container.errorbar is not None:
+            for item in container.errorbar:
+                if item is not None:
+                    if hasattr(item, '__iter__'):
+                        for line in item:
+                            if line is not None and hasattr(line, 'set_zorder'):
+                                line.set_zorder(front_zorder)
+                    elif hasattr(item, 'set_zorder'):
+                        item.set_zorder(front_zorder)
 
     return {
         'ttest_ind': {'stat': float(t_stat), 'p': float(t_p),
@@ -767,7 +746,8 @@ def plot_two_traces_with_scalebars(
     show_xaxis=False,
     x_tick_step=None,         # e.g., 0.5 (seconds). None = Matplotlib default
     xlabel=None,              # e.g., "Time (s)"; None = no label
-    x_tick_params=None        # dict passed to ax.tick_params(axis='x', ...)
+    x_tick_params=None,        # dict passed to ax.tick_params(axis='x', ...)
+    title=''
 ):
     """
     One or two mean±SEM traces without full axes, with small time/ΔF/F scale bars.
@@ -899,6 +879,9 @@ def plot_two_traces_with_scalebars(
             ha="center", va="top", fontsize=8, clip_on=False)
     ax.text(x0 + timebar + 0.01*xspan, y0 + dffbar/2, f"{dffbar:g}% {dff_label}",
             ha="left", va="center", fontsize=8, rotation=90, clip_on=False)
+
+    # title
+    ax.set(title=title)
 
     fig.tight_layout()
     return fig, ax
@@ -1270,7 +1253,9 @@ def plot_paired_violin(list1, list2,
                        colors=['steelblue', 'orange'], 
                        colname=None, ylabel=None, ylim=None, 
                        title_prefix=None,
-                       show_pair_lines=True):
+                       show_pair_lines=True,
+                       ax=None,
+                       markersize=3):
     """
     Plot paired violin plots comparing two matched 1D lists.
 
@@ -1298,8 +1283,9 @@ def plot_paired_violin(list1, list2,
     mask = np.isfinite(list1) & np.isfinite(list2)
     list1 = list1[mask]
     list2 = list2[mask]
-
-    fig, ax = plt.subplots(figsize=(3, 3), dpi=200)
+    
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(3, 3), dpi=200)
 
     data = [list1, list2]
     positions = [1, 2]
@@ -1316,8 +1302,8 @@ def plot_paired_violin(list1, list2,
     x1, x2 = positions
 
     # Add individual data points
-    ax.plot([x1] * len(list1), list1, 'o', color=colors[0], alpha=0.4, markersize=3, zorder=3)
-    ax.plot([x2] * len(list2), list2, 'o', color=colors[1], alpha=0.4, markersize=3, zorder=3)
+    ax.plot([x1] * len(list1), list1, 'o', color=colors[0], alpha=0.4, markersize=markersize, zorder=3)
+    ax.plot([x2] * len(list2), list2, 'o', color=colors[1], alpha=0.4, markersize=markersize, zorder=3)
 
     # Lines connecting paired points
     if show_pair_lines:
@@ -1379,14 +1365,15 @@ def plot_paired_violin(list1, list2,
     # Clean up spines
     for spine in ['top', 'right', 'bottom']:
         ax.spines[spine].set_visible(False)
-
-    fig.tight_layout()
     # plt.show()
-    return fig, ax
+    if ax is None:
+        return fig, ax
 
 def plot_unpaired_violin(list1, list2, colors=['steelblue', 'orange'], 
                          colname=None, ylabel=None, ylim=None, 
-                         title_prefix=None):
+                         title_prefix=None,
+                         ax=None,
+                         markersize=3):
     """
     Plot unpaired violin plots comparing two independent 1D lists.
 
@@ -1403,7 +1390,8 @@ def plot_unpaired_violin(list1, list2, colors=['steelblue', 'orange'],
     list1 = np.asarray(list1)
     list2 = np.asarray(list2)
     
-    fig, ax = plt.subplots(figsize=(3, 3), dpi=200)
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(3, 3), dpi=200)
     
     data = [list1, list2]
     positions = [1, 2]
@@ -1418,8 +1406,8 @@ def plot_unpaired_violin(list1, list2, colors=['steelblue', 'orange'],
     
     # Add individual data points (matching paired style)
     x1, x2 = positions
-    ax.plot([x1]*len(list1), list1, 'o', color=colors[0], alpha=0.3, markersize=3)
-    ax.plot([x2]*len(list2), list2, 'o', color=colors[1], alpha=0.3, markersize=3)
+    ax.plot([x1]*len(list1), list1, 'o', color=colors[0], alpha=0.3, markersize=markersize)
+    ax.plot([x2]*len(list2), list2, 'o', color=colors[1], alpha=0.3, markersize=markersize)
     
     # Add median markers (matching paired style)
     ax.scatter(x1, np.median(list1), s=30, c=colors[0], alpha=.6, zorder=3)
@@ -1462,9 +1450,9 @@ def plot_unpaired_violin(list1, list2, colors=['steelblue', 'orange'],
     for spine in ['top', 'right', 'bottom']:
         ax.spines[spine].set_visible(False)
         
-    fig.tight_layout()
     # plt.show()
-    return fig, ax
+    if ax is None:
+        return fig, ax
 
 def plot_unpaired_boxplot(list1, list2, colors=['steelblue', 'orange'],
                           colname=None, ylabel=None, ylim=None,
@@ -1782,11 +1770,11 @@ def plot_overlay_1bar(list1, list2,
 
     # independent tests (need at least one per group; meaningful with n>=2)
     if l1.size >= 1 and l2.size >= 1:
-        try:
-            ti = ttest_ind(l1, l2, equal_var=False, nan_policy='omit')
-            stats['ttest_ind'] = {'stat': float(ti.statistic), 'p': float(ti.pvalue)}
-        except Exception:
-            stats['ttest_ind'] = None
+        # try:
+        #     ti = ttest_ind(l1, l2, equal_var=False, nan_policy='omit')
+        #     stats['ttest_ind'] = {'stat': float(ti.statistic), 'p': float(ti.pvalue)}
+        # except Exception:
+        #     stats['ttest_ind'] = None
         try:
             # Rank-sum test (asymptotic normal approx), two-sided by default
             rs = ranksums(l1, l2)
@@ -1794,24 +1782,24 @@ def plot_overlay_1bar(list1, list2,
         except Exception:
             stats['ranksums'] = None
     else:
-        stats['ttest_ind'] = None
+        # stats['ttest_ind'] = None
         stats['ranksums'] = None
 
     # paired tests only if same length and >1
-    if l1.size == l2.size and l1.size > 1:
-        try:
-            tr = ttest_rel(l1, l2, nan_policy='omit')
-            stats['ttest_rel'] = {'stat': float(tr.statistic), 'p': float(tr.pvalue)}
-        except Exception:
-            stats['ttest_rel'] = None
-        try:
-            wz = wilcoxon(l1, l2, alternative='two-sided', zero_method='wilcox')
-            stats['wilcoxon'] = {'W': float(wz.statistic), 'p': float(wz.pvalue)}
-        except Exception:
-            stats['wilcoxon'] = None
-    else:
-        stats['ttest_rel'] = None
-        stats['wilcoxon'] = None
+    # if l1.size == l2.size and l1.size > 1:
+    #     try:
+    #         tr = ttest_rel(l1, l2, nan_policy='omit')
+    #         stats['ttest_rel'] = {'stat': float(tr.statistic), 'p': float(tr.pvalue)}
+    #     except Exception:
+    #         stats['ttest_rel'] = None
+    #     try:
+    #         wz = wilcoxon(l1, l2, alternative='two-sided', zero_method='wilcox')
+    #         stats['wilcoxon'] = {'W': float(wz.statistic), 'p': float(wz.pvalue)}
+    #     except Exception:
+    #         stats['wilcoxon'] = None
+    # else:
+    #     stats['ttest_rel'] = None
+    #     stats['wilcoxon'] = None
 
     # ---- plotting ----
     fig, ax = plt.subplots(figsize=(2.8, 3.2), dpi=300)
@@ -1832,11 +1820,11 @@ def plot_overlay_1bar(list1, list2,
     ax.scatter(x2, l2, s=point_size, alpha=0.6, edgecolor='none',
                facecolor=colors[1], zorder=3, label=f'{colname[1]}_n={len(l2)}')
 
-    # list1 points + median line
+    # list1 points + median line  # 2/5/26 remove scatter points for shuffle data
     if l1.size:
         x1 = rng.normal(x, jitter, size=len(l1))
-        ax.scatter(x1, l1, s=point_size, alpha=0.7, edgecolor='none',
-                   facecolor=colors[0], zorder=4, label=f'{colname[0]}_n={len(l1)}')
+        # ax.scatter(x1, l1, s=point_size, alpha=0.7, edgecolor='none',
+        #            facecolor=colors[0], zorder=4, label=f'{colname[0]}_n={len(l1)}')
         median1 = float(np.median(l1))
         ax.hlines(median1, x - bar_width*0.65, x + bar_width*0.65,
                   color=colors[0], linewidth=2, zorder=5)
@@ -1869,25 +1857,25 @@ def plot_overlay_1bar(list1, list2,
 
        
         # ttest_ind
-        if stats['ttest_ind'] is not None:
-            txt_lines.append(f"ttest_ind: t={stats['ttest_ind']['stat']:.2f}, p={_fmt_p(stats['ttest_ind']['p'])}")
-        else:
-            txt_lines.append("ttest_ind: n/a")
+        # if stats['ttest_ind'] is not None:
+        #     txt_lines.append(f"ttest_ind: t={stats['ttest_ind']['stat']:.2f}, p={_fmt_p(stats['ttest_ind']['p'])}")
+        # else:
+        #     txt_lines.append("ttest_ind: n/a")
         # ranksums (independent rank-sum)
         if stats['ranksums'] is not None:
             txt_lines.append(f"rank-sum (ranksums): z={stats['ranksums']['z']:.2f}, p={_fmt_p(stats['ranksums']['p'])}")
         else:
             txt_lines.append("rank-sum (ranksums): n/a")
-        # paired t
-        if stats['ttest_rel'] is not None:
-            txt_lines.append(f"ttest_rel (paired): t={stats['ttest_rel']['stat']:.2f}, p={_fmt_p(stats['ttest_rel']['p'])}")
-        else:
-            txt_lines.append("ttest_rel (paired): n/a")
-        # Wilcoxon signed-rank
-        if stats['wilcoxon'] is not None:
-            txt_lines.append(f"Wilcoxon (paired): W={stats['wilcoxon']['W']:.2f}, p={_fmt_p(stats['wilcoxon']['p'])}")
-        else:
-            txt_lines.append("Wilcoxon (paired): n/a")
+        # # paired t
+        # if stats['ttest_rel'] is not None:
+        #     txt_lines.append(f"ttest_rel (paired): t={stats['ttest_rel']['stat']:.2f}, p={_fmt_p(stats['ttest_rel']['p'])}")
+        # else:
+        #     txt_lines.append("ttest_rel (paired): n/a")
+        # # Wilcoxon signed-rank
+        # if stats['wilcoxon'] is not None:
+        #     txt_lines.append(f"Wilcoxon (paired): W={stats['wilcoxon']['W']:.2f}, p={_fmt_p(stats['wilcoxon']['p'])}")
+        # else:
+        #     txt_lines.append("Wilcoxon (paired): n/a")
 
 
         ax.text(0.98, y_text,
@@ -2584,129 +2572,6 @@ def show_target_grid(target_grid, grid_size, ref_img, fiber_mask=None,
     # plt.show()
     return fig
 
-# def plot_grid_with_mask(ax,
-#               grid_stats,
-#               img_height,
-#               img_width,
-#               grid_size=16,
-#               grid_color='tab:red',
-#               grid_alpha=1,
-#               grid_lw=3,
-#               show_coordinates=False,
-#               grid_start=None,   # (row, col) inclusive
-#               grid_end=None,     # (row, col) inclusive
-#               crop_to_window=True,
-#               add_scalebar=False,
-#               scalebar_len_um=50,
-#               scalebar_zoom=3,
-#               scalebar_color='white',
-#               # --- NEW: mask overlay controls (imshow) ---
-#               axon_mask=None,           # (H, W) bool
-#               mask_cmap='Set1',         # e.g., 'Set1'
-#               mask_alpha=0.5,           # imshow alpha
-#               mask_interp='none',    # imshow interpolation
-#               ):
-#     """
-#     Draw grid boxes indicated by grid_stats['roi_id'] == (row, col).
-#     If `axon_mask` is provided, overlay it with ax.imshow ONLY within selected tiles.
-#     """
-
-#     # Validate optional window
-#     use_window = (grid_start is not None) and (grid_end is not None)
-#     if use_window:
-#         r0, c0 = grid_start
-#         r1, c1 = grid_end
-#         if r0 > r1: r0, r1 = r1, r0
-#         if c0 > c1: c0, c1 = c1, c0
-#         # filter rows to the requested window
-#         mask = grid_stats['roi_id'].apply(lambda rc: (r0 <= rc[0] <= r1) and (c0 <= rc[1] <= c1))
-#         grid_stats_iter = grid_stats.loc[mask]
-#         # pixel bounds of the window
-#         x_min = c0 * grid_size
-#         x_max = min((c1 + 1) * grid_size, img_width)
-#         y_min = r0 * grid_size
-#         y_max = min((r1 + 1) * grid_size, img_height)
-#     else:
-#         grid_stats_iter = grid_stats
-#         x_min, y_min = 0, 0
-#         x_max, y_max = img_width, img_height
-
-#     # --- NEW: build a selection mask and overlay with imshow ---
-#     if axon_mask is not None:
-#         if axon_mask.shape != (img_height, img_width):
-#             raise ValueError(f"axon_mask shape {axon_mask.shape} does not match (img_height, img_width)=({img_height},{img_width})")
-
-#         # tile selection covering only tiles in grid_stats_iter
-#         tile_sel = np.zeros((img_height, img_width), dtype=bool)
-#         for _, grid in grid_stats_iter.iterrows():
-#             r, c = grid['roi_id']
-#             y0 = r * grid_size
-#             x0 = c * grid_size
-#             y1 = min(y0 + grid_size, img_height)
-#             x1 = min(x0 + grid_size, img_width)
-#             if y0 < img_height and x0 < img_width:
-#                 tile_sel[y0:y1, x0:x1] = True
-
-#         # restrict mask to selected tiles
-#         masked_in_tiles = (axon_mask.astype(bool) & tile_sel)
-
-#         # # build an imshow-able masked array: True->1, False->masked (transparent)
-#         # imshow_mask = masked_in_tiles.astype(float)
-#         # imshow_mask = np.ma.masked_where(~masked_in_tiles, imshow_mask)
-
-#         # # use a cmap with transparent "bad" (masked) values
-#         # cmap = plt.get_cmap(mask_cmap).copy()
-#         # cmap.set_bad(alpha=0)
-        
-#         imshow_mask = np.where(masked_in_tiles>0, 1, np.nan)
-#         # draw the mask overlay (before rectangles so grid lines remain on top)
-#         ax.imshow(
-#             imshow_mask,
-#             cmap=mask_cmap,
-#             alpha=mask_alpha,
-#             interpolation=mask_interp,
-#             vmin=0, vmax=1,
-#             zorder=2
-#         )
-
-#     # Draw rectangles (and optional labels)
-#     for _, grid in grid_stats_iter.iterrows():
-#         r, c = grid['roi_id']
-#         x_start = c * grid_size
-#         y_start = r * grid_size
-#         rect = plt.Rectangle((x_start, y_start),
-#                              grid_size, grid_size,
-#                              fill=False, edgecolor=grid_color, alpha=grid_alpha, linewidth=grid_lw)
-#         ax.add_patch(rect)
-
-#         if show_coordinates:
-#             coord_text = f"{r},{c}"
-#             ax.text(x_start + grid_size/2, y_start + grid_size/2,
-#                     coord_text, color=grid_color, fontsize=6,
-#                     ha='center', va='center', weight='bold')
-
-#     # Crop the view if requested
-#     if use_window and crop_to_window:
-#         ax.set_xlim(x_min, x_max)
-#         ax.set_ylim(y_max, y_min)
-#     else:
-#         ax.set_xlim(0, img_width)
-#         ax.set_ylim(img_height, 0)
-
-#     # Optional scalebar
-#     if add_scalebar:
-#         scalbar(ax,
-#                 actual_len_um=scalebar_len_um,
-#                 zoom=scalebar_zoom,
-#                 x_right_px=x_max if (use_window and crop_to_window) else img_width,
-#                 y_bottom_px=y_max if (use_window and crop_to_window) else img_height,
-#                 pad_px=0,
-#                 label=f"{scalebar_len_um} µm",
-#                 color=scalebar_color,
-#                 lw=6)
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 def plot_grid_with_mask(
     ax,
@@ -2838,7 +2703,75 @@ def plot_grid_with_mask(
             color=scalebar_color,
             lw=6
         )
-        
+
+def plot_random_dff_traces(F_soma, n_show=30, seed=None, q_baseline=10, eps=1e-6,
+                           use_common_ylim=False, figsize=(12, 14), dpi=200,
+                           title='',
+                           out_path_fig=None):
+    """
+    F_soma: (n_rois, n_frames) fluorescence array (numpy).
+    n_show: number of ROIs to plot
+    q_baseline: percentile baseline per ROI for dF/F
+    use_common_ylim: if True, use a common y-lim across panels (robust)
+    """
+    F = np.asarray(F_soma)
+    n_rois, n_frames = F.shape
+    n_show = min(n_show, n_rois)
+
+    rng = np.random.default_rng(seed)
+    idx = rng.choice(n_rois, size=n_show, replace=False)
+    
+    dff=F_soma
+
+
+    # robust scaling helpers
+    def robust_ylim(y):
+        lo, hi = np.nanpercentile(y, [1, 99])
+        pad = 0.10 * (hi - lo + 1e-12)
+        return lo - pad, hi + pad
+
+    if use_common_ylim:
+        ylo, yhi = robust_ylim(dff.reshape(-1))
+    else:
+        ylo = yhi = None
+
+    fig, axes = plt.subplots(
+        n_show, 1, sharex=True,
+        figsize=figsize, dpi=dpi,
+        gridspec_kw={"hspace": 0.05}
+    )
+    if n_show == 1:
+        axes = [axes]
+
+    x = np.arange(n_frames)
+
+    for i, ax in enumerate(axes):
+        y = dff[idx[i]]
+        ax.plot(x, y, lw=0.8)
+        # ax.set_ylabel(f"ROI {idx[i]}", rotation=0, labelpad=25, va="center")
+
+        if use_common_ylim:
+            ax.set_ylim(ylo, yhi)
+        else:
+            lo, hi = robust_ylim(y)
+            ax.set_ylim(lo, hi)
+
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+        # keep y ticks minimal to reduce clutter
+        ax.yaxis.set_ticks_position("left")
+        ax.tick_params(axis="y", labelsize=7)
+
+    axes[-1].set_xlabel("Frame")
+    axes[0].set_title(f"{title}")
+
+    plt.tight_layout()
+    if out_path_fig is None:
+        return fig, axes, idx
+    else:
+        plt.savefig(out_path_fig, dpi=dpi)
+        plt.close()
 
 
 

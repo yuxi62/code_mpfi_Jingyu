@@ -256,6 +256,52 @@ def robust_filter_along_axis(vector, factor=2.0, axis=-1, gpu=False, sigma=1.0):
     new_vector = xp.where(vector_sm < thresh_b, 0, vector_sm)
     return new_vector
 
+def calculate_rsd_along_axis(vector, axis=-1, gpu=False, sigma=1.0):
+    """
+    Gaussian-smooth, compute MAD along `axis`, and zero values below (factor * MAD/0.6745)
+    on that axis. Uses your existing `cp_median_abs_deviation` for GPU path without changes.
+
+    Parameters
+    ----------
+    vector : array-like (np.ndarray or cp.ndarray)
+    factor : float
+        Threshold multiplier for robust sigma (MAD/0.6745).
+    axis : int
+        Axis along which to compute MAD and threshold.
+    gpu : bool
+        If True (or if `vector` is a CuPy array), use CuPy path.
+    sigma : float
+        Gaussian sigma for smoothing along `axis`.
+
+    Returns
+    -------
+    new_vector : same type as input
+    """
+    # --- Select backend & funcs ---
+    if gpu or isinstance(vector, cp.ndarray):
+        xp = cp
+        gaussian_filter1d = cp_gaussian_filter1d
+        mad_func = cp_median_abs_deviation    
+    else:
+        xp = np
+        from scipy.ndimage import gaussian_filter1d  # CPU version
+        from scipy.stats import median_abs_deviation as _np_mad
+        # mirror your cp_median_abs_deviation behavior (omit NaNs)
+        mad_func = lambda x, axis=None: _np_mad(x, axis=axis, nan_policy='omit')
+
+    # --- To array ---
+    vector = xp.array(vector)
+
+    # --- Smooth along the chosen axis ---
+    vector_sm = gaussian_filter1d(vector, sigma=sigma, axis=axis)
+
+    # --- Robust sigma (per-slice along axis) ---
+    robust_sigma = mad_func(vector_sm, axis=axis) / 0.6745 # equivalent to using 'normal'
+    
+    if gpu:
+        return robust_sigma.get()
+    else:
+        return robust_sigma
 # def robust_sd_filter(vector, factor=2, return_rsd=0):
 #     vector = np.array(vector)
 #     if vector.ndim==2:

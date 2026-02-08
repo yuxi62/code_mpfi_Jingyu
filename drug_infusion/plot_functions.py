@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 if ("Z:\Jingyu\Code\Python" in sys.path) == False:
     sys.path.append("Z:\Jingyu\Code\Python")
 import utils_Jingyu as utl
+from common import plotting_functions_Jingyu as pf
 
 def plot_ratio_distribution(df_rec, colors=['steelblue', 'orange', 'purple'],
                             suffix=''):
@@ -283,8 +284,17 @@ def plot_population_heatmap(df_rec, rec_id, bef, aft, s,
                             prefix='', suffix='', show_pyr_lines=True, session_for_sorting=None,
                             activity_profile = 'run_cal_profile_rsd',
                             ratio = 'run_ratio_rsd',
-                            cross_sess_norm=False):
-    fig, ax = plt.subplots(figsize=(3, 3), dpi=200)
+                            cross_sess_norm=False,
+                            norm = True, sm=True, plot_mean=False):
+    if len(suffix)>0:
+        suffix = f'_{suffix}'
+    if len(prefix)>0:
+        prefix = f'{prefix}_'
+            
+    if plot_mean:
+        fig, ax = plt.subplots(figsize=(4, 3), dpi=200)
+    else:
+        fig, ax = plt.subplots(figsize=(3, 3), dpi=200)
     activity_profile = f'{activity_profile}_{s}'
     
     # Sort data by run_ratio
@@ -293,10 +303,15 @@ def plot_population_heatmap(df_rec, rec_id, bef, aft, s,
        
     df_sorted = df_rec.sort_values(by=f'{ratio}_{session_for_sorting}', ascending=False)
     # df_sorted = df_rec.dropna(subset=[f'{ratio}_{session_for_sorting}']).sort_values(by=f'{ratio}_{session_for_sorting}')
-    
     run_aligned_sorted = np.stack(df_sorted[activity_profile]).squeeze()
-    run_aligned_sorted_nr = utl.normalize(run_aligned_sorted)
-    run_aligned_sorted_sm = gaussian_filter1d(run_aligned_sorted_nr, sigma=1, axis=-1)
+    if sm:
+        run_aligned_sorted_sm = gaussian_filter1d(run_aligned_sorted, sigma=1, axis=-1)
+    else:
+        run_aligned_sorted_sm = run_aligned_sorted
+    if norm:
+        run_aligned_sorted_sm = utl.normalize(run_aligned_sorted_sm)
+    else:
+        run_aligned_sorted_sm = run_aligned_sorted_sm
     # run_aligned_sorted_sm = robust_std_filter(run_aligned_sorted_sm, robust_sd_factor)
     tot_roi = run_aligned_sorted.shape[0]
     
@@ -334,14 +349,38 @@ def plot_population_heatmap(df_rec, rec_id, bef, aft, s,
             # if n_pyr_up > 0 or n_pyr_down > 0:
             #     ax.legend(loc='upper right', fontsize=6, frameon=False)
     
+    if plot_mean:
+        # pyr_up_col = f'pyrUp_{s}'
+        # pyr_down_col = f'pyrDown_{s}'
+        
+        pyr_up_col = 'pyrUp_ss1'
+        pyr_down_col = 'pyrDown_ss1'
+        pyr_up_prof = np.stack(df_sorted.loc[df_sorted[pyr_up_col], 'run_cal_profile_raw_good_ss1'])
+        pyr_down_prof = np.stack(df_sorted.loc[df_sorted[pyr_down_col], 'run_cal_profile_raw_good_ss1'])
+        
+        tax = ax.twinx()
+        xaxis = np.arange((bef+aft)*30)/30-bef
+        pf.plot_mean_trace(pyr_up_prof, tax, xaxis, color='purple', label='pyrUp_ss1')
+        pf.plot_mean_trace(pyr_down_prof, tax, xaxis, color='darkorange', label='pyrDown_ss2')
+        
+        pyr_up_col = 'pyrUp_ss2'
+        pyr_down_col = 'pyrDown_ss2'
+        pyr_up_prof = np.stack(df_sorted.loc[df_sorted[pyr_up_col], 'run_cal_profile_raw_good_ss2'])
+        pyr_down_prof = np.stack(df_sorted.loc[df_sorted[pyr_down_col], 'run_cal_profile_raw_good_ss2'])
+        pf.plot_mean_trace(pyr_up_prof, tax, xaxis, color='indigo', label='pyrUp_ss2')
+        pf.plot_mean_trace(pyr_down_prof, tax, xaxis, color='chocolate', label='pyrDown_ss2')
+        
+        tax.legend(frameon=False, loc=(1.2, .8), prop={'size': 6})
+        tax.set(ylabel='raw dFF')
+    
     ax.axvline(0, 0, lw=1, ls='--', color='darkred')
-
+    
     ax.set(xlabel='time (s)', 
            ylabel='roi sorted by {}'.format(session_for_sorting), 
            xlim=(-1, 4),
-           title='{}_{}_{}'.format(prefix,
-                                   rec_id,
-                                   suffix)
+           title='{}{}{}'.format(prefix,
+                                 rec_id,
+                                 suffix)
            )
     fig.tight_layout()
     return fig

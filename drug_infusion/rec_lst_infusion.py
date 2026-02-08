@@ -10,20 +10,6 @@ import pandas as pd
 exp = r'GCaMP8s_infusion'
 
 rec_lst_infusion = [
-{'anm': 'AC986', 'date': '20250606', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH_2']},
-{'anm': 'AC985', 'date': '20250606', 'session': ['02', '04'], 'label': ['baseline', 'SCH']},
-{'anm': 'AC986', 'date': '20250609', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH_2']},
-{'anm': 'AC985', 'date': '20250609', 'session': ['02', '04'], 'label': ['baseline', 'ctrl'], 'conc': [np.nan, np.nan]},
-{'anm': 'AC986', 'date': '20250610', 'session': ['02', '04'], 'label': ['baseline', 'SCH'],  'conc': [np.nan, 0.027]},
-{'anm': 'AC986', 'date': '20250611', 'session': ['02', '04'], 'label': ['baseline', 'ctrl'], 'conc': [np.nan, np.nan]},
-{'anm': 'AC986', 'date': '20250612', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH2'], 'conc': [np.nan, 0.027, 0.027]},
-{'anm': 'AC986', 'date': '20250613', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH2'], 'conc': [np.nan, 0.5, 0.5]}, ## Brainphys + SCH, solution issue
-
-{'anm': 'AC986', 'date': '20250616', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH2'], 'conc': [np.nan, 0.5, 0.5]},
-{'anm': 'AC988', 'date': '20250616', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH2'], 'conc': [np.nan, 0.5, 0.5]},
-{'anm': 'AC986', 'date': '20250617', 'session': ['02', '04', '06'], 'label': ['baseline', 'ctrl', 'ctrl2'], 'conc': [np.nan, np.nan, np.nan]},
-{'anm': 'AC988', 'date': '20250617', 'session': ['02', '04', '06'], 'label': ['baseline', 'ctrl', 'ctrl2'], 'conc': [np.nan, np.nan, np.nan]},
-# from here increase waiting time to 20 min
 {'anm': 'AC986', 'date': '20250618', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH2'], 'conc': [np.nan, 0.5, 0.5], 'latency': 20,}, 
 {'anm': 'AC988', 'date': '20250618', 'session': ['02', '04', '06'], 'label': ['baseline', 'SCH', 'SCH2'], 'conc': [np.nan, 0.5, 0.5], 'latency': 20,}, 
 {'anm': 'AC986', 'date': '20250619', 'session': ['02', '04', ], 'label': ['baseline', 'SCH', ], 'conc': [np.nan, 1], 'latency': 20,}, 
@@ -69,9 +55,9 @@ rec_lst_infusion = [
 {'anm': 'AC302', 'date': '20250728', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  
 {'anm': 'AC996', 'date': '20250728', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,}, # behaviour not perfect
 {'anm': 'AC302', 'date': '20250729', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 2,], 'latency': 20,},  
-{'anm': 'AC302', 'date': '20250730', 'session': ['02', '04',], 'label': ['baseline', 'muscimol',], 'conc': [np.nan, 2,], 'latency': 20,},  
+# {'anm': 'AC302', 'date': '20250730', 'session': ['02', '04',], 'label': ['baseline', 'muscimol',], 'conc': [np.nan, 2,], 'latency': 20,},  
 {'anm': 'AC302', 'date': '20250731', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 2,], 'latency': 30,},  
-{'anm': 'AC302', 'date': '20250801', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 30,},  
+# {'anm': 'AC302', 'date': '20250801', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 30,},  #?????
 {'anm': 'AC310', 'date': '20250818', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,}, # behaviour not perfect
 {'anm': 'AC310', 'date': '20250819', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  
 {'anm': 'AC310', 'date': '20250820', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,}, 
@@ -83,7 +69,41 @@ rec_lst_infusion = [
 {'anm': 'AC310', 'date': '20250828', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 20,},  
 {'anm': 'AC310', 'date': '20250829', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,}, 
 # {'anm': 'AC310', 'date': '20250830', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 5,], 'latency': 20,},  # bad imaging quality
-]
+{'anm': 'AC316', 'date': '20251023', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC316', 'date': '20251024', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC316', 'date': '20251028', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC316', 'date': '20251029', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},
+# {'anm': 'AC316', 'date': '20251030', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  # bad imaging quality
+{'anm': 'AC314', 'date': '20251030', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251031', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC316', 'date': '20251031', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},    
+{'anm': 'AC314', 'date': '20251103', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251104', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC316', 'date': '20251104', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251105', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC316', 'date': '20251106', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251106', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251107', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251110', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251111', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251111', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},
+{'anm': 'AC314', 'date': '20251113', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251113', 'session': ['02', '04',], 'label': ['baseline', 'SCH',], 'conc': [np.nan, 1,], 'latency': 20,},
+{'anm': 'AC314', 'date': '20251114', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251117', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251117', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251118', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251118', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251119', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251119', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC314', 'date': '20251120', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},
+{'anm': 'AC317', 'date': '20251120', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},
+{'anm': 'AC314', 'date': '20251122', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},
+{'anm': 'AC317', 'date': '20251121', 'session': ['02', '04',], 'label': ['baseline', 'propranolol',], 'conc': [np.nan, 1,], 'latency': 20,},
+{'anm': 'AC317', 'date': '20251125', 'session': ['02', '04',], 'label': ['baseline', 'prazosin',], 'conc': [np.nan, 1,], 'latency': 20,},  
+{'anm': 'AC317', 'date': '20251126', 'session': ['02', '04',], 'label': ['baseline', 'ctrl',], 'conc': [np.nan, np.nan,], 'latency': 20,},  
+  
+    ]
 
 muscimol_imaging = [
 {'anm': 'AC986', 'date': '20250614', 'session': ['02', '04', '06'], 'label': ['baseline', 'muscimol', 'muscimol2'], 'conc': [np.nan, 0.25, 0.25]},    
@@ -95,9 +115,30 @@ SESSION_INFO_PATH = r"Z:\Jingyu\LC_HPC_manuscript\raw_data\drug_infusion\infusio
 df_session_info = pd.read_parquet(SESSION_INFO_PATH)
 
 # Filter for high-quality sessions
-selected_rec_lst = df_session_info[
+rec_lst = df_session_info[
                     (df_session_info['perc_valid_trials_ss1']>0.6)&
                     (df_session_info['perc_valid_trials_ss2']>0.6)&
                     (df_session_info['latency']==20)&
                     (df_session_info['anm']!='AC996') # different strain: Ai14:D1R
                     ]
+
+rec_SCH = rec_lst[
+    rec_lst[["label", "conc"]].apply(
+        lambda row: ("SCH" in str(row["label"])) and (np.nanmin(row["conc"]) >= 1),
+        axis=1)
+        ]
+rec_praz = rec_lst[
+    rec_lst[["label", "conc"]].apply(
+        lambda row: ("prazosin" in str(row["label"])) and (np.nanmin(row["conc"]) >= 1),
+        axis=1)
+        ]
+rec_prop = rec_lst[
+    rec_lst[["label", "conc"]].apply(
+        lambda row: ("propranolol" in str(row["label"])) and (np.nanmin(row["conc"]) >= 1),
+        axis=1)
+        ]
+
+rec_ctrl      = rec_lst[rec_lst['label'].apply(lambda x: 'ctrl' in x)]
+rec_SCH_ctrl  = rec_ctrl[rec_ctrl['anm'].isin(rec_SCH['anm'])]
+rec_praz_ctrl = rec_ctrl[rec_ctrl['anm'].isin(rec_praz['anm'])]
+rec_prop_ctrl = rec_ctrl[rec_ctrl['anm'].isin(rec_prop['anm'])]

@@ -158,7 +158,7 @@ def update_session_info(df_session_info, rec, exp='GCaMP8s_infusion'):
     return df_session_info
 
 
-#%%
+#%%    
 if __name__ == "__main__":
     output_file = os.path.join(OUTPUT_DIR, 'infusion_session_info.parquet')
 

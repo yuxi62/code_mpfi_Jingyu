@@ -156,14 +156,7 @@ for rec_idx, rec in tqdm(rec_drug.iterrows(), total=len(rec_drug), desc="Process
     run_valid_ss2 = run_ss2[(seperate_valid_trial(beh_ss2))&(run_ss2!=-1)]
     run_good_ss2  = run_ss2[(select_good_trials(beh_ss2))&(run_ss2!=-1)]
     run_good_ss2[:10] = 0 # exclude first 10 trials due to imaging intensity drifting
-
-    has_good_ss1 = np.sum(run_good_ss1) > 0
-    has_good_ss2 = np.sum(run_good_ss2) > 0
-    if not has_good_ss1:
-        print(f'  WARNING: {anm}-{date} ss1 has no good trials after exclusion')
-    if not has_good_ss2:
-        print(f'  WARNING: {anm}-{date} ss2 has no good trials after exclusion')
-
+    
     # only include active soma rois
     dff_ss1 = np.load(data_path/f'{anm}-{date}-02_dFF.npy')[is_active_soma]   
     dff_ss2 = np.load(data_path/f'{anm}-{date}-04_dFF.npy')[is_active_soma]
@@ -185,17 +178,12 @@ for rec_idx, rec in tqdm(rec_drug.iterrows(), total=len(rec_drug), desc="Process
     configs = {
         'valid_ss1': (dff_ss1_sm, run_valid_ss1),
         'valid_ss2': (dff_ss2_sm, run_valid_ss2),
+        'good_ss1':  (dff_ss1_sm, run_good_ss1),
+        'good_ss2':  (dff_ss2_sm, run_good_ss2),
     }
-    if has_good_ss1:
-        configs['good_ss1'] = (dff_ss1_sm, run_good_ss1)
-    if has_good_ss2:
-        configs['good_ss2'] = (dff_ss2_sm, run_good_ss2)
 
-    drop_cols = ['roi_id', 'dilation_k',
-                 'shuff_response_amplitude', 'shuff_effect_size', 'shuff_response_ratio']
-    stats = {}
-    for name, (traces, events) in configs.items():
-        result = quantify_event_response(
+    stats = {
+        name: quantify_event_response(
                 corrected_traces=traces,
                 event_frames=events,
                 baseline_window=(-1, 0),
@@ -203,25 +191,18 @@ for rec_idx, rec in tqdm(rec_drug.iterrows(), total=len(rec_drug), desc="Process
                 imaging_rate=30.0,
                 shuffle_test=False,
                 shuffle_params=shuffle_params
-            )
-        if result is not None:
-            stats[name] = result.drop(columns=drop_cols, errors='ignore')
-
-    # Build list of suffixed DataFrames; for missing good configs, create NaN placeholders
-    n_active = int(np.sum(is_active_soma))
-    stats_parts = []
-    for name in ['valid_ss1', 'valid_ss2', 'good_ss1', 'good_ss2']:
-        if name in stats:
-            stats_parts.append(stats[name].add_suffix(f'_{name}'))
-        else:
-            # use columns from any existing stats entry as template
-            template = next(iter(stats.values()))
-            nan_df = pd.DataFrame(np.nan, index=range(n_active),
-                                  columns=[f'{c}_{name}' for c in template.columns])
-            stats_parts.append(nan_df)
+            ).drop(columns=['roi_id', 'dilation_k',
+                            'shuff_response_amplitude', 'shuff_effect_size', 'shuff_response_ratio'],
+                            errors='ignore'
+                            )
+            for name, (traces, events) in configs.items()
+    }
 
     # Combine all with suffixes and add unit_id
-    stats_combined = pd.concat(stats_parts, axis=1)
+    stats_combined = pd.concat(
+        [df.add_suffix(f'_{name}') for name, df in stats.items()],
+        axis=1
+    )
     stats_combined.insert(0, 'unit_id', np.where(is_active_soma)[0])
     stats_combined.to_parquet(OUTPUT_RES/f'{anm}-{date}_raw_dff_profile.parquet')
     
@@ -237,18 +218,15 @@ for rec_idx, rec in tqdm(rec_drug.iterrows(), total=len(rec_drug), desc="Process
                     }
     
     # Define configurations for each stats calculation
-    configs_rsd = {
+    configs = {
         'valid_ss1': (dff_ss1_rsd_safe, run_valid_ss1),
         'valid_ss2': (dff_ss2_rsd_safe, run_valid_ss2),
+        'good_ss1':  (dff_ss1_rsd_safe, run_good_ss1),
+        'good_ss2':  (dff_ss2_rsd_safe, run_good_ss2),
     }
-    if has_good_ss1:
-        configs_rsd['good_ss1'] = (dff_ss1_rsd_safe, run_good_ss1)
-    if has_good_ss2:
-        configs_rsd['good_ss2'] = (dff_ss2_rsd_safe, run_good_ss2)
 
-    stats_rsd = {}
-    for name, (traces, events) in configs_rsd.items():
-        result = quantify_event_response(
+    stats_rsd = {
+        name: quantify_event_response(
                 corrected_traces=traces,
                 event_frames=events,
                 baseline_window=(-1, 0),
@@ -256,23 +234,19 @@ for rec_idx, rec in tqdm(rec_drug.iterrows(), total=len(rec_drug), desc="Process
                 imaging_rate=30.0,
                 shuffle_test=False,
                 shuffle_params=shuffle_params
-            )
-        if result is not None:
-            stats_rsd[name] = result.drop(columns=drop_cols, errors='ignore')
-
-    # Build list of suffixed DataFrames; for missing good configs, create NaN placeholders
-    stats_rsd_parts = []
-    for name in ['valid_ss1', 'valid_ss2', 'good_ss1', 'good_ss2']:
-        if name in stats_rsd:
-            stats_rsd_parts.append(stats_rsd[name].add_suffix(f'_{name}'))
-        else:
-            template = next(iter(stats_rsd.values()))
-            nan_df = pd.DataFrame(np.nan, index=range(n_active),
-                                  columns=[f'{c}_{name}' for c in template.columns])
-            stats_rsd_parts.append(nan_df)
+            ).drop(columns=['roi_id', 'dilation_k',
+                            'shuff_response_amplitude', 'shuff_effect_size', 'shuff_response_ratio'
+                            ],
+                            errors='ignore'
+                            )
+            for name, (traces, events) in configs.items()
+    }
 
     # Combine all with suffixes and add unit_id
-    stats_rsd_combined = pd.concat(stats_rsd_parts, axis=1)
+    stats_rsd_combined = pd.concat(
+        [df.add_suffix(f'_{name}') for name, df in stats_rsd.items()],
+        axis=1
+    )
     stats_rsd_combined.insert(0, 'unit_id', np.where(is_active_soma)[0])
     stats_rsd_combined.to_parquet(OUTPUT_RES/f'{anm}-{date}_rsd_dff_profile.parquet')
     # except:
