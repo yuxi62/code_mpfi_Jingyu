@@ -1,9 +1,8 @@
-# LC_HPC_manuscript Code Analysis Pipeline
+# LC_HPC_manuscript analysis code
 
 Analysis code for LC_HPC_manuscript, including dLight and drug infusion calcium two-photon imaging.
 
 ## Overview
-
 
 ## Code Structure
 
@@ -74,43 +73,6 @@ code_mpfi_Jingyu/
 │
 └── requirements.txt
 ```
-
-## Installation
-
-### Requirements
-- Python 3.8+
-- NVIDIA GPU with CUDA support (recommended for large datasets)
-
-### Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/yuxi62/code_mpfi_Jingyu.git
-cd code_mpfi_Jingyu
-
-# Create virtual environment (recommended)
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# For GPU acceleration (adjust CUDA version as needed)
-pip install cupy-cuda11x
-```
-
-### For Spyder/Interactive Use
-
-```python
-import sys
-if r"Z:\Jingyu\code_mpfi_Jingyu" not in sys.path:
-    sys.path.insert(0, r"Z:\Jingyu\code_mpfi_Jingyu")
-
-# Then import modules
-from common.utils_imaging import percentile_dff
-from drug_infusion.rec_lst_infusion import rec_lst_infusion
-```
-
 ## Methods
 
 ### Recording Selection
@@ -217,6 +179,30 @@ Function: [`dlight_regressor_mask()`](common/mask/utils_mask.py) in `utils_mask.
 
 *Description to be added.*
 
+
+## Installation
+
+### Requirements
+- Python 3.8+
+- NVIDIA GPU with CUDA support (recommended for large datasets)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/yuxi62/code_mpfi_Jingyu.git
+cd code_mpfi_Jingyu
+
+# Create virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# For GPU acceleration (adjust CUDA version as needed)
+pip install cupy-cuda11x
+```
 
 ## Dependencies
 
